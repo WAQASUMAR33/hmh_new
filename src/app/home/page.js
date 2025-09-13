@@ -12,7 +12,6 @@ import PromoSlider from "./components/PromoSlider";
 import DropshippingSteps from "./components/DropshippingSteps";
 import WhatHMHOffer from "./components/WhatHmhOffer";
 import OurAdvantages from "./components/OurAdvantages";
-import CaseStudies from "./components/CaseStudies";
 import CaseStudiesCarousel from "./components/CaseStudiesCarousel";
 import IndustryInsights from "./components/IndustryInsights";
 
@@ -32,7 +31,6 @@ export default function Home() {
             <DropshippingSteps />
             <WhatHMHOffer />
             <OurAdvantages />
-            <CaseStudies />
             <CaseStudiesCarousel />
             <IndustryInsights />
             <Footer />
