@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                      String         @id @default(cuid())
+  role                    Role
+  firstName               String
+  lastName                String
+  email                   String         @unique
+  username                String         @unique
+  password                String
+  emailVerified           Boolean        @default(false)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+  companyLegalName        String?
+  entityType              String?
+  contactName             String?
+  websiteRegion           String?
+  monthlyTraffic          Int?
+  monthlyPageViews        Int?
+  briefIntro              String?
+  brandName               String?
+  termsAccepted           Boolean?
+  website                 String?
+  phoneNumber             String?
+  country                 String?
+  state                   String?
+  city                    String?
+  postalCode              String?
+  address                 String?
+  isActivated             Int            @default(0)
+  isActivatedDate         DateTime       @default(now())
+  image                   String?
+  stripeAccountId         String?
+  termsAndConditions      String?
+  advertiserBookings      Booking[]      @relation("AdvertiserBookings")
+  publisherBookings       Booking[]      @relation("PublisherBookings")
+  advertiserConversations Conversation[] @relation("AdvertiserConversations")
+  publisherConversations  Conversation[] @relation("PublisherConversations")
+  messages                Message[]      @relation("AuthorMessages")
+  sentNotifications       Notification[] @relation("SenderNotifications")
+  notifications           Notification[] @relation("UserNotifications")
+  offers                  Offer[]        @relation("AdvertiserOffers")
+  opportunities           Opportunity[]  @relation("PublisherOpportunities")
+}
+
+model Opportunity {
+  id             String                    @id @default(cuid())
+  publisherId    String
+  title          String
+  slug           String                    @unique
+  summary        String?
+  description    String?
+  placementType  PlacementType
+  status         OpportunityStatus         @default(DRAFT)
+  pricingType    PricingType               @default(FIXED)
+  basePrice      Decimal?                  @db.Decimal(12, 2)
+  currency       String                    @default("USD")
+  verticals      String?                   @db.LongText
+  geos           String?                   @db.LongText
+  requirements   String?
+  deliverables   String?
+  monthlyTraffic Int?
+  averageCTR     Float?
+  avgOpenRate    Float?
+  availableFrom  DateTime?
+  availableTo    DateTime?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+  bookings       Booking[]
+  messages       Message[]                 @relation("OpportunityMessages")
+  notifications  Notification[]            @relation("OpportunityNotifications")
+  offers         Offer[]
+  publisher      User                      @relation("PublisherOpportunities", fields: [publisherId], references: [id])
+  availability   OpportunityAvailability[]
+  media          OpportunityMedia[]
+  priceOptions   OpportunityPriceOption[]
+
+  @@index([publisherId])
+  @@index([status, placementType])
+  @@fulltext([title, description])
+}
+
+model OpportunityMedia {
+  id            String      @id @default(cuid())
+  opportunityId String
+  url           String
+  kind          String?
+  createdAt     DateTime    @default(now())
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId], map: "OpportunityMedia_opportunityId_fkey")
+}
+
+model OpportunityPriceOption {
+  id            String      @id @default(cuid())
+  opportunityId String
+  label         String
+  pricingType   PricingType
+  price         Decimal?    @db.Decimal(12, 2)
+  cpm           Decimal?    @db.Decimal(12, 4)
+  cpc           Decimal?    @db.Decimal(12, 4)
+  cpaPercent    Decimal?    @db.Decimal(5, 2)
+  currency      String      @default("USD")
+  minTermDays   Int?
+  createdAt     DateTime    @default(now())
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId], map: "OpportunityPriceOption_opportunityId_fkey")
+}
+
+model OpportunityAvailability {
+  id            String      @id @default(cuid())
+  opportunityId String
+  start         DateTime
+  end           DateTime
+  note          String?
+  isBooked      Boolean     @default(false)
+  createdAt     DateTime    @default(now())
+  opportunity   Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId, start, end])
+}
+
+model Offer {
+  id              String      @id @default(cuid())
+  opportunityId   String
+  advertiserId    String
+  advertiserBrand String?
+  status          OfferStatus @default(PENDING)
+  pricingType     PricingType
+  proposedPrice   Decimal?    @db.Decimal(12, 2)
+  currency        String      @default("USD")
+  proposedStart   DateTime?
+  proposedEnd     DateTime?
+  notes           String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  bookings        Booking[]   @relation("OfferBookings")
+  thread          Message[]   @relation("OfferMessages")
+  advertiser      User        @relation("AdvertiserOffers", fields: [advertiserId], references: [id])
+  opportunity     Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId, advertiserId])
+  @@index([status])
+  @@index([advertiserId], map: "Offer_advertiserId_fkey")
+}
+
+model Booking {
+  id                    String         @id @default(cuid())
+  opportunityId         String
+  advertiserId          String
+  publisherId           String
+  offerId               String?
+  status                BookingStatus  @default(PENDING)
+  requestedStart        DateTime
+  requestedEnd          DateTime
+  selectedPrice         Decimal        @db.Decimal(12, 2)
+  currency              String         @default("USD")
+  notes                 String?
+  stripePaymentIntentId String?
+  paymentStatus         PaymentStatus  @default(PENDING)
+  platformFee           Decimal?       @db.Decimal(12, 2)
+  publisherPayout       Decimal?       @db.Decimal(12, 2)
+  deliveredAt           DateTime?
+  deliveredFiles        String?        @db.LongText
+  deliveredNotes        String?
+  approvedAt            DateTime?
+  approvedBy            String?
+  disputeReason         String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  advertiser            User           @relation("AdvertiserBookings", fields: [advertiserId], references: [id])
+  offer                 Offer?         @relation("OfferBookings", fields: [offerId], references: [id])
+  opportunity           Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  publisher             User           @relation("PublisherBookings", fields: [publisherId], references: [id])
+  messages              Message[]      @relation("BookingMessages")
+  notifications         Notification[] @relation("BookingNotifications")
+
+  @@index([opportunityId])
+  @@index([advertiserId])
+  @@index([publisherId])
+  @@index([status])
+  @@index([stripePaymentIntentId])
+  @@index([offerId], map: "Booking_offerId_fkey")
+}
+
+model Conversation {
+  id           String    @id @default(cuid())
+  advertiserId String
+  publisherId  String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  advertiser   User      @relation("AdvertiserConversations", fields: [advertiserId], references: [id])
+  publisher    User      @relation("PublisherConversations", fields: [publisherId], references: [id])
+  messages     Message[] @relation("ConversationMessages")
+
+  @@index([advertiserId])
+  @@index([publisherId])
+  @@index([updatedAt])
+}
+
+model Message {
+  id             String         @id @default(cuid())
+  authorId       String
+  opportunityId  String?
+  offerId        String?
+  createdAt      DateTime       @default(now())
+  bookingId      String?
+  content        String?
+  conversationId String?
+  messageType    String         @default("TEXT")
+  recipientId    String?
+  author         User           @relation("AuthorMessages", fields: [authorId], references: [id])
+  booking        Booking?       @relation("BookingMessages", fields: [bookingId], references: [id])
+  conversation   Conversation?  @relation("ConversationMessages", fields: [conversationId], references: [id])
+  offer          Offer?         @relation("OfferMessages", fields: [offerId], references: [id])
+  opportunity    Opportunity?   @relation("OpportunityMessages", fields: [opportunityId], references: [id])
+  notifications  Notification[] @relation("MessageNotifications")
+
+  @@index([conversationId])
+  @@index([opportunityId])
+  @@index([offerId])
+  @@index([bookingId])
+  @@index([recipientId])
+  @@index([authorId], map: "Message_authorId_fkey")
+}
+
+model Notification {
+  id            String       @id @default(cuid())
+  userId        String
+  senderId      String?
+  opportunityId String?
+  messageId     String?
+  type          String
+  title         String
+  createdAt     DateTime     @default(now())
+  bookingId     String?
+  content       String?
+  isRead        Boolean      @default(false)
+  booking       Booking?     @relation("BookingNotifications", fields: [bookingId], references: [id], onDelete: Cascade)
+  message       Message?     @relation("MessageNotifications", fields: [messageId], references: [id], onDelete: Cascade)
+  opportunity   Opportunity? @relation("OpportunityNotifications", fields: [opportunityId], references: [id], onDelete: Cascade)
+  sender        User?        @relation("SenderNotifications", fields: [senderId], references: [id])
+  user          User         @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([bookingId], map: "Notification_bookingId_fkey")
+  @@index([messageId], map: "Notification_messageId_fkey")
+  @@index([opportunityId], map: "Notification_opportunityId_fkey")
+  @@index([senderId], map: "Notification_senderId_fkey")
+  @@index([userId, isRead])
+}
+
+enum Role {
+  PUBLISHER
+  ADVERTISER
+  ADMIN
+}
+
+enum OpportunityStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+  BOOKED
+}
+
+enum PlacementType {
+  HOMEPAGE_BANNER
+  CATEGORY_BANNER
+  SPONSORED_ARTICLE
+  NEWSLETTER_FEATURE
+  SOCIAL_POST
+  REVIEW
+  GIVEAWAY
+  PODCAST_READ
+  OTHER
+}
+
+enum PricingType {
+  FIXED
+  CPM
+  CPC
+  CPA
+  HYBRID
+  FREE
+}
+
+enum OfferStatus {
+  PENDING
+  COUNTERED
+  ACCEPTED
+  DECLINED
+  WITHDRAWN
+  EXPIRED
+  CANCELLED
+}
+
+enum BookingStatus {
+  PENDING
+  ACCEPTED
+  PAID
+  IN_PROGRESS
+  DELIVERED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+  CANCELLED
+}
