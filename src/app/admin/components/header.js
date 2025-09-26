@@ -3,28 +3,24 @@ import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bell, Settings, User, LogOut, MessageSquare, HelpCircle, CreditCard } from 'lucide-react';
 import Image from 'next/image';
-import NotificationDropdown from '@/app/components/NotificationDropdown';
 
-export default function Header() {
+export default function Header({ title = "Admin Dashboard", icon: Icon = User }) {
     const [userName, setUserName] = useState('');
-    const [showNotif, setShowNotif] = useState(false);
     const [showProfile, setShowProfile] = useState(false);
-    const notifRef = useRef(null);
     const profileRef = useRef(null);
 
     useEffect(() => {
         const user = JSON.parse(localStorage.getItem('user'));
         if (user) {
             const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-            setUserName(fullName || 'User');
+            setUserName(fullName || 'Admin User');
+        } else {
+            setUserName('Admin User');
         }
     }, []);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (notifRef.current && !notifRef.current.contains(e.target)) {
-                setShowNotif(false);
-            }
             if (profileRef.current && !profileRef.current.contains(e.target)) {
                 setShowProfile(false);
             }
@@ -34,9 +30,11 @@ export default function Header() {
     }, []);
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('userRole');
+        localStorage.removeItem('userEmail');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.location.href = '/admin/login';
     };
 
     return (
@@ -46,14 +44,17 @@ export default function Header() {
             transition={{ duration: 0.5 }}
             className="flex justify-between items-center border-b border-gray-200 px-6 py-4 bg-white sticky top-0 z-30"
         >
-            <p className="text-lg md:text-xl font-bold text-gray-700 leading-none">
-                Welcome, <span className="text-violet-600 font-bold">{userName}</span>
-            </p>
+            <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-violet-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                    <div className="text-[2rem] font-bold text-gray-800">{title}</div>
+                    <p className="text-[0.9rem] text-gray-500">Admin Portal</p>
+                </div>
+            </div>
 
             <div className="flex items-center gap-6 relative">
-                {/* Notification */}
-                <NotificationDropdown />
-
                 {/* Profile */}
                 <div className="relative" ref={profileRef}>
                     <button onClick={() => setShowProfile(!showProfile)}>
@@ -80,6 +81,9 @@ export default function Header() {
                                 <ul className="text-sm text-gray-600 divide-y divide-gray-100">
                                     <li className="px-4 py-3 hover:bg-gray-100 cursor-pointer flex items-center gap-2">
                                         <User size={16} /> Profile
+                                    </li>
+                                    <li className="px-4 py-3 hover:bg-gray-100 cursor-pointer flex items-center gap-2">
+                                        <Settings size={16} /> Settings
                                     </li>
                                     <li className="px-4 py-3 hover:bg-gray-100 cursor-pointer flex items-center gap-2">
                                         <HelpCircle size={16} /> Help

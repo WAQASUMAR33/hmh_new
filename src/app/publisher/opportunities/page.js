@@ -226,7 +226,7 @@ export default function PublisherOpportunitiesPage() {
         <div className="min-h-screen bg-white text-black">
             <Sidebar />
             {/* Sticky top header */}
-            <div className="ml-20 sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            <div className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}>
                 <Header />
             </div>
 
@@ -235,7 +235,7 @@ export default function PublisherOpportunitiesPage() {
                 variants={heroStagger}
                 initial="hidden"
                 animate="visible"
-                className="relative ml-16 sm:ml-20 px-4 sm:px-8 pt-6 sm:pt-8"
+                className="relative px-4 sm:px-8 pt-6 sm:pt-8" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}
             >
                 <div className="max-w-[90rem] mx-auto relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 text-white px-6 sm:px-8 py-6 shadow-lg">
                     <GlowOrbs />
@@ -266,7 +266,7 @@ export default function PublisherOpportunitiesPage() {
             </motion.section>
 
             {/* Enhanced Filters */}
-            <motion.div className="ml-16 sm:ml-20 px-4 sm:px-8 mt-6" variants={cardIn} initial="hidden" animate="visible">
+            <motion.div className="px-4 sm:px-8 mt-6" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }} variants={cardIn} initial="hidden" animate="visible">
                 <ToastContainer position="top-right" />
                 <div className="max-w-[90rem] mx-auto rounded-3xl border border-gray-200 bg-gradient-to-r from-white to-gray-50 p-6 sm:p-8 shadow-lg">
                     <div className="flex items-center gap-3 mb-4">
@@ -325,7 +325,7 @@ export default function PublisherOpportunitiesPage() {
             </motion.div>
 
             {/* Enhanced Results List */}
-            <motion.div className="ml-16 sm:ml-20 px-4 sm:px-8 mt-6 pb-12" variants={cardIn} initial="hidden" animate="visible">
+            <motion.div className="px-4 sm:px-8 mt-6 pb-12" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }} variants={cardIn} initial="hidden" animate="visible">
                 <div className="max-w-[90rem] mx-auto">
                     {/* Results Header */}
                     <div className="flex items-center justify-between mb-6">

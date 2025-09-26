@@ -14,7 +14,8 @@ import {
     BarChart3,
     Building,
     MapPin,
-    Calendar
+    Calendar,
+    ExternalLink
 } from 'lucide-react';
 
 const containerVariants = {
@@ -75,6 +76,7 @@ export default function PublisherDiscovery() {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Publishers data:', data);
+                console.log('First publisher fields:', data.publishers?.[0] ? Object.keys(data.publishers[0]) : 'No publishers');
                 setPublishers(data.publishers || []);
             } else {
                 const errorData = await response.json();
@@ -202,15 +204,18 @@ export default function PublisherDiscovery() {
 
     if (loading) {
         return (
-            <div className="flex h-screen">
+            <div className="min-h-screen bg-white text-black">
                 <Sidebar />
-                <div className="flex-1 flex flex-col">
+                
+                {/* Sticky top header */}
+                <div className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60" style={{ marginLeft: 'var(--advertiser-sidebar-width, 80px)' }}>
                     <Header />
-                    <div className="flex-1 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                            <p className="mt-4 text-gray-600">Loading publishers...</p>
-                        </div>
+                </div>
+                
+                <div className="flex items-center justify-center min-h-[calc(100vh-80px)]" style={{ marginLeft: 'var(--advertiser-sidebar-width, 80px)' }}>
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                        <p className="mt-4 text-gray-600">Loading publishers...</p>
                     </div>
                 </div>
             </div>
@@ -218,18 +223,21 @@ export default function PublisherDiscovery() {
     }
 
     return (
-        <div className="flex h-screen">
+        <div className="min-h-screen bg-white text-black">
             <Sidebar />
-            <div className="flex-1 flex flex-col">
+            
+            {/* Sticky top header */}
+            <div className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60" style={{ marginLeft: 'var(--advertiser-sidebar-width, 80px)' }}>
                 <Header />
-                
-                <motion.div 
-                    className="flex-1 p-6 bg-gray-50 overflow-y-auto"
-                    variants={containerVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    <div className="max-w-7xl mx-auto">
+            </div>
+            
+            <motion.div 
+                className="p-6 bg-gray-50 overflow-y-auto" style={{ marginLeft: 'var(--advertiser-sidebar-width, 80px)' }}
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <div className="max-w-7xl mx-auto">
                         {/* Header */}
                         <motion.div className="mb-8" variants={cardVariants}>
                             <div className="flex items-center gap-3 mb-4">
@@ -423,6 +431,20 @@ export default function PublisherDiscovery() {
                                             <Building className="w-4 h-4" />
                                             <span>{publisher.entityType || 'Not specified'}</span>
                                         </div>
+                                        {(publisher.websiteUrl || publisher.website || publisher.url) && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <ExternalLink className="w-4 h-4 text-blue-600" />
+                                                <a 
+                                                    href={(publisher.websiteUrl || publisher.website || publisher.url).startsWith('http') ? (publisher.websiteUrl || publisher.website || publisher.url) : `https://${publisher.websiteUrl || publisher.website || publisher.url}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-600 hover:text-blue-800 hover:underline truncate"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    {publisher.websiteUrl || publisher.website || publisher.url}
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex gap-2">
@@ -462,103 +484,119 @@ export default function PublisherDiscovery() {
                     </div>
                 </motion.div>
 
-                {/* Publisher Detail Modal */}
-                {showPublisherModal && selectedPublisher && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
-                        >
-                            <div className="flex items-start justify-between mb-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xl">
-                                        {selectedPublisher.firstName?.[0]}{selectedPublisher.lastName?.[0]}
+            {/* Publisher Detail Modal */}
+            {showPublisherModal && selectedPublisher && (
+                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+                    >
+                        <div className="flex items-start justify-between mb-6">
+                            <div className="flex items-center gap-4">
+                                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-xl">
+                                    {selectedPublisher.firstName?.[0]}{selectedPublisher.lastName?.[0]}
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-800">
+                                        {selectedPublisher.firstName} {selectedPublisher.lastName}
+                                    </h2>
+                                    <p className="text-gray-600">{selectedPublisher.companyLegalName}</p>
+                                    <p className="text-sm text-gray-500">{selectedPublisher.contactName}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setShowPublisherModal(false)}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-800 mb-3">Company Overview</h3>
+                                <p className="text-gray-600">{selectedPublisher.briefIntro}</p>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <BarChart3 className="w-5 h-5 text-blue-600" />
+                                        <span className="font-semibold text-gray-800">Monthly Page Views</span>
                                     </div>
+                                    <p className="text-2xl font-bold text-blue-600">
+                                        {formatNumber(selectedPublisher.monthlyPageViews || 0)}
+                                    </p>
+                                </div>
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Users className="w-5 h-5 text-green-600" />
+                                        <span className="font-semibold text-gray-800">Monthly Traffic</span>
+                                    </div>
+                                    <p className="text-2xl font-bold text-green-600">
+                                        {formatNumber(selectedPublisher.monthlyTraffic || 0)}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-2">
+                                    <Globe className="w-5 h-5 text-gray-400" />
                                     <div>
-                                        <h2 className="text-2xl font-bold text-gray-800">
-                                            {selectedPublisher.firstName} {selectedPublisher.lastName}
-                                        </h2>
-                                        <p className="text-gray-600">{selectedPublisher.companyLegalName}</p>
-                                        <p className="text-sm text-gray-500">{selectedPublisher.contactName}</p>
+                                        <p className="text-sm text-gray-500">Website Region</p>
+                                        <p className="font-medium">{selectedPublisher.websiteRegion || 'Not specified'}</p>
                                     </div>
                                 </div>
+                                <div className="flex items-center gap-2">
+                                    <Building className="w-5 h-5 text-gray-400" />
+                                    <div>
+                                        <p className="text-sm text-gray-500">Entity Type</p>
+                                        <p className="font-medium">{selectedPublisher.entityType || 'Not specified'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {(selectedPublisher.websiteUrl || selectedPublisher.website || selectedPublisher.url) && (
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <ExternalLink className="w-5 h-5 text-blue-600" />
+                                        <span className="font-semibold text-gray-800">Website</span>
+                                    </div>
+                                    <a 
+                                        href={(selectedPublisher.websiteUrl || selectedPublisher.website || selectedPublisher.url).startsWith('http') ? (selectedPublisher.websiteUrl || selectedPublisher.website || selectedPublisher.url) : `https://${selectedPublisher.websiteUrl || selectedPublisher.website || selectedPublisher.url}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 hover:underline break-all"
+                                    >
+                                        {selectedPublisher.websiteUrl || selectedPublisher.website || selectedPublisher.url}
+                                    </a>
+                                </div>
+                            )}
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => {
+                                        setShowPublisherModal(false);
+                                        handleMessagePublisher(selectedPublisher.id);
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                                >
+                                    <MessageCircle className="w-5 h-5" />
+                                    Send Message
+                                </button>
                                 <button
                                     onClick={() => setShowPublisherModal(false)}
-                                    className="text-gray-400 hover:text-gray-600"
+                                    className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                                 >
-                                    ✕
+                                    Close
                                 </button>
                             </div>
-
-                            <div className="space-y-6">
-                                <div>
-                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Company Overview</h3>
-                                    <p className="text-gray-600">{selectedPublisher.briefIntro}</p>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-gray-50 rounded-lg p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <BarChart3 className="w-5 h-5 text-blue-600" />
-                                            <span className="font-semibold text-gray-800">Monthly Page Views</span>
-                                        </div>
-                                        <p className="text-2xl font-bold text-blue-600">
-                                            {formatNumber(selectedPublisher.monthlyPageViews || 0)}
-                                        </p>
-                                    </div>
-                                    <div className="bg-gray-50 rounded-lg p-4">
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <Users className="w-5 h-5 text-green-600" />
-                                            <span className="font-semibold text-gray-800">Monthly Traffic</span>
-                                        </div>
-                                        <p className="text-2xl font-bold text-green-600">
-                                            {formatNumber(selectedPublisher.monthlyTraffic || 0)}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="flex items-center gap-2">
-                                        <Globe className="w-5 h-5 text-gray-400" />
-                                        <div>
-                                            <p className="text-sm text-gray-500">Website Region</p>
-                                            <p className="font-medium">{selectedPublisher.websiteRegion || 'Not specified'}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Building className="w-5 h-5 text-gray-400" />
-                                        <div>
-                                            <p className="text-sm text-gray-500">Entity Type</p>
-                                            <p className="font-medium">{selectedPublisher.entityType || 'Not specified'}</p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-3">
-                                    <button
-                                        onClick={() => {
-                                            setShowPublisherModal(false);
-                                            handleMessagePublisher(selectedPublisher.id);
-                                        }}
-                                        className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
-                                    >
-                                        <MessageCircle className="w-5 h-5" />
-                                        Send Message
-                                    </button>
-                                    <button
-                                        onClick={() => setShowPublisherModal(false)}
-                                        className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </div>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
         </div>
     );
 }

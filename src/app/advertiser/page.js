@@ -8,7 +8,7 @@ export default function advertiserDashboard() {
         <div className="min-h-screen bg-white text-black">
             <Sidebar />
 
-            <div className="ml-20 transition-all duration-300">
+            <div className="transition-all duration-300" style={{ marginLeft: 'var(--advertiser-sidebar-width, 80px)' }}>
                 <Header />
                 <OverviewCards />
             </div>

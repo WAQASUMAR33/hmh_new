@@ -285,7 +285,7 @@ export default function EditOpportunityPage() {
                 variants={heroStagger}
                 initial="hidden"
                 animate="visible"
-                className="relative ml-16 sm:ml-20 px-4 sm:px-8 pt-8 sm:pt-10"
+                className="relative px-4 sm:px-8 pt-8 sm:pt-10" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}
             >
                 <div className="max-w-8xl mx-auto relative overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white px-5 sm:px-8 py-7 shadow-sm">
                     <GlowOrbs />
@@ -311,14 +311,14 @@ export default function EditOpportunityPage() {
             <Sidebar />
 
             {/* Sticky top header */}
-            <div className="ml-20 sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            <div className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}>
                 <Header />
             </div>
 
             <GlowHero />
 
             {/* Form + Preview share SAME width as hero via max-w-6xl */}
-            <motion.div className="ml-16 sm:ml-20 px-4 sm:px-8 pb-10" variants={cardIn} initial="hidden" animate="visible">
+            <motion.div className="px-4 sm:px-8 pb-10" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }} variants={cardIn} initial="hidden" animate="visible">
                 <ToastContainer position="top-right" />
 
                 <div className="max-w-8xl mx-auto mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6">

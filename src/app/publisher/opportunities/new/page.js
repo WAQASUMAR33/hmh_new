@@ -276,7 +276,7 @@ export default function CreateOpportunityPage() {
             <Sidebar />
 
             {/* Sticky top header */}
-            <div className="ml-20 sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            <div className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}>
                 <Header />
             </div>
 
@@ -285,7 +285,7 @@ export default function CreateOpportunityPage() {
                 variants={heroStagger}
                 initial="hidden"
                 animate="visible"
-                className="relative ml-16 sm:ml-20 px-4 sm:px-8 py-8 sm:py-10 overflow-hidden"
+                className="relative px-4 sm:px-8 py-8 sm:py-10 overflow-hidden" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}
             >
                 {/* ⬇️ Same max width wrapper we'll reuse below */}
                 <div className="max-w-8xl mx-auto">
@@ -310,7 +310,7 @@ export default function CreateOpportunityPage() {
 
             {/* Form + Preview (shares SAME width as hero via max-w-6xl) */}
             <motion.div
-                className="ml-16 sm:ml-20 px-4 sm:px-8 pb-10"
+                className="px-4 sm:px-8 pb-10" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}
                 variants={cardIn}
                 initial="hidden"
                 animate="visible"

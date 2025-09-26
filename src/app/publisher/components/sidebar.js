@@ -1,6 +1,6 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     LayoutDashboard,
@@ -15,6 +15,8 @@ import {
     ActivitySquare,
     MessageSquare,
     Calendar,
+    Pin,
+    PinOff,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -215,30 +217,71 @@ const SidebarItem = ({ item, isHovered, pathname, level = 0 }) => {
 export default function Sidebar() {
     const pathname = usePathname();
     const [isHovered, setIsHovered] = useState(false);
+    const [pinned, setPinned] = useState(false);
+
+    // Load persisted pin state
+    useEffect(() => {
+        const saved = localStorage.getItem('publisherSidebarPinned');
+        if (saved === 'true') setPinned(true);
+    }, []);
+
+    // Determine live width
+    const sidebarWidth = useMemo(() => (pinned ? 260 : (isHovered ? 260 : 80)), [pinned, isHovered]);
+
+    // Sync CSS var for layout push
+    useEffect(() => {
+        if (typeof document !== 'undefined') {
+            document.documentElement.style.setProperty('--publisher-sidebar-width', `${sidebarWidth}px`);
+        }
+    }, [sidebarWidth]);
+
+    const handleMouseEnter = () => {
+        if (!pinned) setIsHovered(true);
+    };
+    const handleMouseLeave = () => {
+        if (!pinned) setIsHovered(false);
+    };
+
+    const togglePin = () => {
+        const next = !pinned;
+        setPinned(next);
+        localStorage.setItem('publisherSidebarPinned', next ? 'true' : 'false');
+        if (next) setIsHovered(true);
+    };
 
     return (
         <motion.div
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-            animate={{ width: isHovered ? 260 : 80 }}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            animate={{ width: sidebarWidth }}
             transition={{ duration: 0.25 }}
-            className="h-screen bg-[#1f2937] text-white border-r border-black shadow-lg fixed top-0 left-0 z-50 overflow-y-auto"
+            className="h-screen bg-[#1f2937] bg-gradient-to-b from-[#1f2937] to-[#111827] text-white border-r border-black/50 shadow-xl fixed top-0 left-0 z-50 overflow-y-auto backdrop-blur-sm"
         >
-            <div className="flex items-center justify-center h-16 border-b border-gray-700 px-4">
+            <div className="flex items-center justify-between h-16 border-b border-gray-700/60 px-4">
                 <Image
                     src="/imgs/logo.png"
                     alt="Logo"
-                    width={isHovered ? 120 : 30}
+                    width={isHovered || pinned ? 120 : 30}
                     height={30}
-                    className="transition-all duration-200 object-contain"
+                    className="transition-all duration-200 object-contain drop-shadow"
                 />
+                {(isHovered || pinned) && (
+                    <button
+                        aria-label={pinned ? 'Unpin sidebar' : 'Pin sidebar'}
+                        onClick={togglePin}
+                        className="p-2 rounded-md hover:bg-gray-700/50 transition-colors"
+                        title={pinned ? 'Unpin' : 'Pin'}
+                    >
+                        {pinned ? <Pin className="w-4 h-4 text-violet-300" /> : <PinOff className="w-4 h-4 text-gray-300" />}
+                    </button>
+                )}
             </div>
-            <ul className="mt-4 space-y-2">
+            <ul className="mt-4 space-y-1.5">
                 {menuItems.map((item, index) => (
                     <SidebarItem
                         key={index}
                         item={item}
-                        isHovered={isHovered}
+                        isHovered={isHovered || pinned}
                         pathname={pathname}
                     />
                 ))}

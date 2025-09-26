@@ -459,12 +459,12 @@ export default function AdvertiserProfilePage() {
             <Sidebar />
 
             {/* Sticky top header */}
-            <div className="ml-20 sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            <div className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60" style={{ marginLeft: 'var(--advertiser-sidebar-width, 80px)' }}>
                 <Header />
             </div>
 
             <motion.div
-                className="ml-16 sm:ml-20 p-4 sm:p-8"
+                className="p-4 sm:p-8" style={{ marginLeft: 'var(--advertiser-sidebar-width, 80px)' }}
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"

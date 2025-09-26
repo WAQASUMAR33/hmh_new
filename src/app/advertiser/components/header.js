@@ -46,7 +46,7 @@ export default function Header() {
             transition={{ duration: 0.5 }}
             className="flex justify-between items-center border-b border-gray-200 px-6 py-4 bg-white sticky top-0 z-30"
         >
-            <h1 className="text-xl font-semibold text-gray-800">
+            <h1 className="text-sm font-medium text-gray-800">
                 Welcome, <span className="text-violet-600">{userName}</span>
             </h1>
 

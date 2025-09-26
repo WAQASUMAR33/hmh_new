@@ -455,43 +455,54 @@ export default function ProfilePage() {
             <Sidebar />
 
             {/* Sticky top header */}
-            <div className="ml-20 sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            <div className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}>
                 <Header />
             </div>
 
+            {/* Enhanced Hero with wide container */}
+            <motion.section
+                variants={heroStagger}
+                initial="hidden"
+                animate="visible"
+                className="relative px-4 sm:px-8 pt-6 sm:pt-8" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}
+            >
+                <div className="max-w-[90rem] mx-auto relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 text-white px-6 sm:px-8 py-6 shadow-lg">
+                    <GlowOrbs />
+                    <motion.div variants={fadeDown} className="relative z-10">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                <User className="w-5 h-5 text-white" />
+                            </div>
+                            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                                Profile Management
+                            </h1>
+                        </div>
+                        <motion.p variants={fadeDown} className="text-base sm:text-lg text-violet-100/90 max-w-2xl mb-3">
+                            Manage your account information, preferences, and security settings.
+                        </motion.p>
+                        <motion.div variants={fadeDown} className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-violet-100/80">
+                                <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                                <span className="text-sm">Account Secure</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-violet-100/80">
+                                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                <span className="text-sm">Profile Complete</span>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                </div>
+            </motion.section>
+
             <motion.div 
-                className="ml-16 sm:ml-20 p-4 sm:p-8"
+                className="px-4 sm:px-8 mt-6 pb-12" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
             >
                 <ToastContainer position="top-right" />
-                
-                {/* Header */}
-                <motion.div 
-                    className="mb-6 sm:mb-8"
-                    variants={itemVariants}
-                >
-                    <motion.h1 
-                        className="text-2xl sm:text-3xl font-bold text-gray-900"
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.1 }}
-                    >
-                        Welcome back, {user.firstName}! 👋
-                    </motion.h1>
-                    <motion.p 
-                        className="text-gray-600 mt-2 text-sm sm:text-base"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, delay: 0.2 }}
-                    >
-                        Manage your account information and preferences
-                    </motion.p>
-                </motion.div>
-                <ToastContainer position="top-right" />
 
-                <div className="max-w-6xl mx-auto">
+                <div className="max-w-[90rem] mx-auto">
                     {/* Profile Overview Card */}
                     <motion.div 
                         className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-lg mb-6"

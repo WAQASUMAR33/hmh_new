@@ -150,11 +150,11 @@ function PublisherInboxContent() {
             <Sidebar />
             
             {/* Sticky header */}
-            <div className="ml-20 sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+            <div className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}>
                 <Header />
             </div>
 
-            <div className="ml-16 sm:ml-20 p-4 sm:p-8">
+            <div className="p-4 sm:p-8" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}>
                 <motion.div
                     className="max-w-6xl mx-auto"
                     variants={staggerChildren}

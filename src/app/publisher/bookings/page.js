@@ -205,39 +205,52 @@ export default function PublisherBookingsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+        <div className="min-h-screen bg-white text-black">
             <Sidebar />
-            <div className="ml-20">
+            {/* Sticky top header */}
+            <div className="sticky top-0 z-40 border-b bg-white/85 backdrop-blur supports-[backdrop-filter]:bg-white/60" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}>
                 <Header />
+            </div>
+
+            {/* Enhanced Hero with wide container */}
+            <motion.section
+                variants={heroStagger}
+                initial="hidden"
+                animate="visible"
+                className="relative px-4 sm:px-8 pt-6 sm:pt-8" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }}
+            >
+                <div className="max-w-[90rem] mx-auto relative overflow-hidden rounded-2xl border border-indigo-100 bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 text-white px-6 sm:px-8 py-6 shadow-lg">
+                    <GlowOrbs />
+                    <motion.div variants={fadeDown} className="relative z-10">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                <Calendar className="w-5 h-5 text-white" />
+                            </div>
+                            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                                My Bookings
+                            </h1>
+                        </div>
+                        <motion.p variants={fadeDown} className="text-base sm:text-lg text-violet-100/90 max-w-2xl mb-3">
+                            Manage your publishing bookings and track their progress with advertisers.
+                        </motion.p>
+                        <motion.div variants={fadeDown} className="flex items-center gap-4">
+                            <div className="flex items-center gap-2 text-violet-100/80">
+                                <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+                                <span className="text-sm">Active Bookings</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-violet-100/80">
+                                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                <span className="text-sm">Revenue Tracking</span>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                </div>
+            </motion.section>
+
+            <motion.div className="px-4 sm:px-8 mt-6" style={{ marginLeft: 'var(--publisher-sidebar-width, 80px)' }} variants={cardIn} initial="hidden" animate="visible">
                 <ToastContainer position="top-right" />
                 
-                {/* Hero Section */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600">
-                    <GlowOrbs />
-                    <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                        <motion.div
-                            variants={heroStagger}
-                            initial="hidden"
-                            animate="visible"
-                            className="text-center"
-                        >
-                            <motion.h1 
-                                variants={fadeDown}
-                                className="text-4xl md:text-5xl font-bold text-white mb-4"
-                            >
-                                My Bookings
-                            </motion.h1>
-                            <motion.p 
-                                variants={fadeDown}
-                                className="text-xl text-violet-100 max-w-2xl mx-auto"
-                            >
-                                Manage your publishing bookings and track their progress
-                            </motion.p>
-                        </motion.div>
-                    </div>
-                </div>
-
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div className="max-w-[90rem] mx-auto">
                     {/* Status Summary Cards */}
                     <motion.div 
                         variants={staggerChildren}
@@ -399,7 +412,7 @@ export default function PublisherBookingsPage() {
                         />
                     )}
                 </AnimatePresence>
-            </div>
+            </motion.div>
         </div>
     );
 }
