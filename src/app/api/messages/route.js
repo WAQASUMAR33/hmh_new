@@ -14,11 +14,12 @@ export async function GET(req) {
         const opportunityId = searchParams.get('opportunityId');
         const offerId = searchParams.get('offerId');
         const bookingId = searchParams.get('bookingId');
+        const publisherId = searchParams.get('publisherId');
         const limit = parseInt(searchParams.get('limit') || '50');
         const cursor = searchParams.get('cursor');
 
-        if (!opportunityId && !offerId && !bookingId) {
-            return NextResponse.json({ error: 'opportunityId, offerId, or bookingId is required' }, { status: 400 });
+        if (!opportunityId && !offerId && !bookingId && !publisherId) {
+            return NextResponse.json({ error: 'opportunityId, offerId, bookingId, or publisherId is required' }, { status: 400 });
         }
 
         // Build where clause
@@ -26,6 +27,20 @@ export async function GET(req) {
         if (opportunityId) where.opportunityId = opportunityId;
         if (offerId) where.offerId = offerId;
         if (bookingId) where.bookingId = bookingId;
+        if (publisherId) {
+            // For publisher conversations, we need to find messages between the current user and the publisher
+            // This is a direct conversation, not tied to a specific opportunity
+            where.OR = [
+                { 
+                    authorId: session.id, 
+                    recipientId: publisherId 
+                },
+                { 
+                    authorId: publisherId, 
+                    recipientId: session.id 
+                }
+            ];
+        }
 
         const messages = await prisma.message.findMany({
             where,
@@ -69,14 +84,14 @@ export async function POST(req) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { opportunityId, offerId, bookingId, body } = await req.json();
+        const { opportunityId, offerId, bookingId, publisherId, content } = await req.json();
 
-        if (!body || body.trim().length === 0) {
-            return NextResponse.json({ error: 'Message body is required' }, { status: 400 });
+        if (!content || content.trim().length === 0) {
+            return NextResponse.json({ error: 'Message content is required' }, { status: 400 });
         }
 
-        if (!opportunityId && !offerId && !bookingId) {
-            return NextResponse.json({ error: 'opportunityId, offerId, or bookingId is required' }, { status: 400 });
+        if (!opportunityId && !offerId && !bookingId && !publisherId) {
+            return NextResponse.json({ error: 'opportunityId, offerId, bookingId, or publisherId is required' }, { status: 400 });
         }
 
         // Verify the opportunity exists and user has access
@@ -138,13 +153,35 @@ export async function POST(req) {
             }
         }
 
+        // Verify the publisher exists and user has access
+        if (publisherId) {
+            const publisher = await prisma.user.findUnique({
+                where: { id: publisherId }
+            });
+
+            if (!publisher) {
+                return NextResponse.json({ error: 'Publisher not found' }, { status: 404 });
+            }
+
+            // Allow bidirectional messaging between advertisers and publishers
+            // Either: advertiser sending to publisher, or publisher sending to advertiser
+            const isValidConversation = 
+                (session.role === 'ADVERTISER' && publisher.role === 'PUBLISHER') ||
+                (session.role === 'PUBLISHER' && publisher.role === 'ADVERTISER');
+
+            if (!isValidConversation) {
+                return NextResponse.json({ error: 'Access denied - invalid conversation' }, { status: 403 });
+            }
+        }
+
         const message = await prisma.message.create({
             data: {
                 authorId: session.id,
                 opportunityId: opportunityId || null,
                 offerId: offerId || null,
                 bookingId: bookingId || null,
-                body: body.trim()
+                recipientId: publisherId || null,
+                content: content.trim()
             },
             include: {
                 author: {
@@ -177,10 +214,28 @@ export async function POST(req) {
                         messageId: message.id,
                         type: 'MESSAGE',
                         title: 'New message from advertiser',
-                        body: `${message.author.firstName} sent you a message about "${opportunity.title}"`
+                        content: `${message.author.firstName} sent you a message about "${opportunity.title}"`
                     }
                 });
             }
+        }
+
+        if (publisherId) {
+            // Notify the recipient about new direct message
+            const recipientId = publisherId;
+            const senderRole = session.role;
+            const recipientRole = senderRole === 'ADVERTISER' ? 'PUBLISHER' : 'ADVERTISER';
+            
+            await prisma.notification.create({
+                data: {
+                    userId: recipientId,
+                    senderId: session.id,
+                    messageId: message.id,
+                    type: 'MESSAGE',
+                    title: `New message from ${senderRole.toLowerCase()}`,
+                    content: `${message.author.firstName} sent you a direct message`
+                }
+            });
         }
 
         if (bookingId) {
@@ -205,7 +260,7 @@ export async function POST(req) {
                         messageId: message.id,
                         type: 'MESSAGE',
                         title: 'New message about booking',
-                        body: `${message.author.firstName} sent you a message about "${booking.opportunity.title}"`
+                        content: `${message.author.firstName} sent you a message about "${booking.opportunity.title}"`
                     }
                 });
             }

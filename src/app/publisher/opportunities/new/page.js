@@ -291,7 +291,7 @@ export default function CreateOpportunityPage() {
                 <div className="max-w-8xl mx-auto">
                     <div className="relative rounded-2xl border border-indigo-100 bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 text-white px-5 sm:px-8 py-7 shadow-sm">
                         <GlowOrbs />
-                        <motion.h1 variants={fadeDown} className="text-2xl sm:text-3xl font-bold">
+                        <motion.h1 variants={fadeDown} className="text-xl sm:text-2xl font-bold">
                             Create a New Opportunity
                         </motion.h1>
                         <motion.p variants={fadeDown} className="mt-1 text-sm sm:text-base text-violet-100/90">

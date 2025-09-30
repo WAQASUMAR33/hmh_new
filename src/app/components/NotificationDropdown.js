@@ -16,7 +16,7 @@ const NotificationDropdown = () => {
 
     useEffect(() => {
         fetchNotifications();
-        // Poll for new notifications every 30 seconds
+        // Poll for new notifications every 30 seconds (reduced frequency to avoid spam when DB is down)
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
     }, []);
@@ -24,14 +24,22 @@ const NotificationDropdown = () => {
     const fetchNotifications = async () => {
         try {
             const response = await fetch('/api/notifications?unread=true');
-            const data = await response.json();
             
-            if (response.ok) {
-                setNotifications(data.data || []);
-                setUnreadCount(data.data?.length || 0);
+            if (!response.ok) {
+                // If API returns error, clear notifications
+                setNotifications([]);
+                setUnreadCount(0);
+                return;
             }
+            
+            const data = await response.json();
+            setNotifications(data.data || []);
+            setUnreadCount(data.data?.length || 0);
         } catch (error) {
-            console.error('Error fetching notifications:', error);
+            // Silently handle network errors - clear notifications when DB is down
+            console.warn('Notifications unavailable:', error.message);
+            setNotifications([]);
+            setUnreadCount(0);
         }
     };
 
@@ -46,13 +54,15 @@ const NotificationDropdown = () => {
             if (response.ok) {
                 setNotifications(prev => 
                     prev.map(n => 
-                        n.id === notificationId ? { ...n, read: true } : n
+                        n.id === notificationId ? { ...n, isRead: true } : n
                     )
                 );
                 setUnreadCount(prev => Math.max(0, prev - 1));
+            } else {
+                console.warn('Failed to mark notification as read - API error');
             }
         } catch (error) {
-            console.error('Error marking notification as read:', error);
+            console.warn('Failed to mark notification as read - network error:', error.message);
         }
     };
 
@@ -66,12 +76,15 @@ const NotificationDropdown = () => {
             });
 
             if (response.ok) {
-                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
                 setUnreadCount(0);
                 toast.success('All notifications marked as read');
+            } else {
+                console.warn('Failed to mark all notifications as read - API error');
+                toast.error('Failed to mark notifications as read');
             }
         } catch (error) {
-            console.error('Error marking all notifications as read:', error);
+            console.warn('Failed to mark all notifications as read - network error:', error.message);
             toast.error('Failed to mark notifications as read');
         } finally {
             setLoading(false);
@@ -79,7 +92,7 @@ const NotificationDropdown = () => {
     };
 
     const handleNotificationClick = (notification) => {
-        if (!notification.read) {
+        if (!notification.isRead) {
             markAsRead(notification.id);
         }
         
@@ -158,7 +171,7 @@ const NotificationDropdown = () => {
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
-                                                !notification.read ? 'bg-violet-50' : ''
+                                                !notification.isRead ? 'bg-violet-50' : ''
                                             }`}
                                             onClick={() => handleNotificationClick(notification)}
                                         >
@@ -182,7 +195,7 @@ const NotificationDropdown = () => {
                                                         </span>
                                                     </div>
                                                     <p className="text-sm text-gray-600 mt-1">
-                                                        {notification.body}
+                                                        {notification.content}
                                                     </p>
                                                     {notification.opportunity && (
                                                         <p className="text-xs text-violet-600 mt-1">
@@ -190,7 +203,7 @@ const NotificationDropdown = () => {
                                                         </p>
                                                     )}
                                                 </div>
-                                                {!notification.read && (
+                                                {!notification.isRead && (
                                                     <div className="flex-shrink-0">
                                                         <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                                                     </div>

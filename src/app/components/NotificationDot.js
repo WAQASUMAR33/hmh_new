@@ -9,18 +9,24 @@ const NotificationDot = ({ className = "" }) => {
         const checkUnreadNotifications = async () => {
             try {
                 const response = await fetch('/api/notifications?unread=true');
-                const data = await response.json();
                 
-                if (response.ok) {
-                    setHasUnread((data.data || []).length > 0);
+                if (!response.ok) {
+                    // If API returns error, don't show notifications
+                    setHasUnread(false);
+                    return;
                 }
+                
+                const data = await response.json();
+                setHasUnread((data.data || []).length > 0);
             } catch (error) {
-                console.error('Error checking notifications:', error);
+                // Silently handle network errors - don't show notifications when DB is down
+                console.warn('Notifications unavailable:', error.message);
+                setHasUnread(false);
             }
         };
 
         checkUnreadNotifications();
-        // Poll every 30 seconds
+        // Poll every 30 seconds (reduced frequency to avoid spam when DB is down)
         const interval = setInterval(checkUnreadNotifications, 30000);
         return () => clearInterval(interval);
     }, []);

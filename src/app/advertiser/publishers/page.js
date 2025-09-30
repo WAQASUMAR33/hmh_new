@@ -17,6 +17,9 @@ import {
     Calendar,
     ExternalLink
 } from 'lucide-react';
+import ChatModal from '@/app/components/ChatModal';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const containerVariants = {
     hidden: { opacity: 0 },
@@ -55,6 +58,11 @@ export default function PublisherDiscovery() {
     const [showFilters, setShowFilters] = useState(false);
     const [selectedPublisher, setSelectedPublisher] = useState(null);
     const [showPublisherModal, setShowPublisherModal] = useState(false);
+    
+    // Chat functionality
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [selectedPublisherForChat, setSelectedPublisherForChat] = useState(null);
+    const [chatLoading, setChatLoading] = useState(false);
 
     useEffect(() => {
         fetchPublishers();
@@ -151,28 +159,23 @@ export default function PublisherDiscovery() {
         setShowPublisherModal(true);
     };
 
-    const handleMessagePublisher = async (publisherId) => {
+    const handleMessagePublisher = async (publisher) => {
         try {
-            // Create a new conversation or get existing one
-            const response = await fetch('/api/messages/conversations', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    recipientId: publisherId,
-                    message: `Hi! I'm interested in working with you. Let's discuss potential collaboration opportunities.`
-                })
-            });
-
-            if (response.ok) {
-                // Redirect to messages page or open chat modal
-                window.location.href = '/advertiser/messages';
-            }
+            setChatLoading(true);
+            // Open chat modal directly
+            setSelectedPublisherForChat(publisher);
+            setIsChatOpen(true);
         } catch (error) {
-            console.error('Error sending message:', error);
+            console.error('Error opening chat:', error);
+            toast.error('Failed to open chat');
+        } finally {
+            setChatLoading(false);
         }
+    };
+
+    const closeChat = () => {
+        setIsChatOpen(false);
+        setSelectedPublisherForChat(null);
     };
 
     const formatNumber = (num) => {
@@ -224,6 +227,7 @@ export default function PublisherDiscovery() {
 
     return (
         <div className="min-h-screen bg-white text-black">
+            <ToastContainer position="top-right" />
             <Sidebar />
             
             {/* Sticky top header */}
@@ -461,11 +465,16 @@ export default function PublisherDiscovery() {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleMessagePublisher(publisher.id);
+                                                handleMessagePublisher(publisher);
                                             }}
-                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                                            disabled={chatLoading}
+                                            className="flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                                         >
-                                            <MessageCircle className="w-4 h-4" />
+                                            {chatLoading ? (
+                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            ) : (
+                                                <MessageCircle className="w-4 h-4" />
+                                            )}
                                         </button>
                                     </div>
                                 </motion.div>
@@ -579,7 +588,7 @@ export default function PublisherDiscovery() {
                                 <button
                                     onClick={() => {
                                         setShowPublisherModal(false);
-                                        handleMessagePublisher(selectedPublisher.id);
+                                        handleMessagePublisher(selectedPublisher);
                                     }}
                                     className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                                 >
@@ -596,6 +605,17 @@ export default function PublisherDiscovery() {
                         </div>
                     </motion.div>
                 </div>
+            )}
+
+            {/* Chat Modal */}
+            {selectedPublisherForChat && (
+                <ChatModal
+                    isOpen={isChatOpen}
+                    onClose={closeChat}
+                    publisherId={selectedPublisherForChat.id}
+                    publisher={selectedPublisherForChat}
+                    opportunityTitle={`Chat with ${selectedPublisherForChat.firstName} ${selectedPublisherForChat.lastName}`}
+                />
             )}
         </div>
     );

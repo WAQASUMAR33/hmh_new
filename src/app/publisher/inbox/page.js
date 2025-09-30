@@ -266,7 +266,7 @@ function PublisherInboxContent() {
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-2 h-2 bg-violet-600 rounded-full"></div>
                                                         <p className="text-sm text-gray-600 truncate">
-                                                            {conversation.lastMessage.author.firstName}: {truncateMessage(conversation.lastMessage.body)}
+                                                            {conversation.lastMessage.author.firstName}: {truncateMessage(conversation.lastMessage.content)}
                                                         </p>
                                                     </div>
                                                 )}
@@ -304,6 +304,7 @@ function PublisherInboxContent() {
                         setSelectedConversation(null);
                     }}
                     opportunityId={selectedConversation.opportunityId}
+                    publisherId={selectedConversation.type === 'direct' ? selectedConversation.participant?.id : null}
                     offerId={selectedConversation.offerId}
                     opportunityTitle={selectedConversation.opportunityTitle}
                     publisher={selectedConversation.participant}

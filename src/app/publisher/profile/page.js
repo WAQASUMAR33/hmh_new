@@ -508,28 +508,8 @@ export default function ProfilePage() {
                         className="bg-white rounded-3xl border border-gray-200 p-6 sm:p-8 shadow-lg mb-6"
                         variants={cardVariants}
                     >
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-violet-100 flex items-center justify-center">
-                                    <User className="w-5 h-5 text-violet-600" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-gray-900">Profile Overview</h2>
-                                    <p className="text-sm text-gray-600">Your personal information and settings</p>
-                                </div>
-                            </div>
-                            <motion.button
-                                onClick={() => setIsPasswordModalOpen(true)}
-                                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg flex items-center gap-2"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                <Lock className="w-4 h-4" />
-                                Change Password
-                            </motion.button>
-                        </div>
-                        
-                        <div className="flex flex-col sm:flex-row items-start gap-6">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+                            <div className="flex flex-col sm:flex-row items-start gap-6">
                             <div className="relative mx-auto sm:mx-0">
                                 <motion.div
                                     whileHover={{ scale: 1.05 }}
@@ -559,9 +539,27 @@ export default function ProfilePage() {
                             </div>
                             
                             <div className="flex-1 text-center sm:text-left">
-                                <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
+                                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                                     {user.firstName} {user.lastName}
                                 </h3>
+                                
+                                {/* Website URL */}
+                                {user.website && (
+                                    <div className="mb-2">
+                                        <a 
+                                            href={user.website.startsWith('http') ? user.website : `https://${user.website}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 rounded-lg text-sm font-medium hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 border border-blue-200"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
+                                            {user.website.replace(/^https?:\/\//, '')}
+                                        </a>
+                                    </div>
+                                )}
+                                
                                 <p className="text-gray-600 mb-2 break-all">
                                     {user.email}
                                 </p>
@@ -569,6 +567,17 @@ export default function ProfilePage() {
                                     {user.role || 'Publisher'}
                                 </div>
                             </div>
+                            </div>
+                            
+                            <motion.button
+                                onClick={() => setIsPasswordModalOpen(true)}
+                                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-semibold shadow-md hover:shadow-lg flex items-center gap-2 self-start"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                <Lock className="w-4 h-4" />
+                                Change Password
+                            </motion.button>
                         </div>
                     </motion.div>
 

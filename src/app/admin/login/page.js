@@ -67,7 +67,7 @@ export default function AdminLogin() {
                 transition={{ duration: 0.8 }}
             >
                 {/* Background Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-red-600 via-orange-600 to-yellow-600"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700"></div>
                 
                 {/* Floating Elements */}
                 <div className="absolute inset-0">
@@ -90,7 +90,7 @@ export default function AdminLogin() {
                     </motion.div>
 
                     <motion.h1 
-                        className="text-2xl lg:text-3xl font-bold mb-3 drop-shadow-lg"
+                        className="text-xl lg:text-2xl font-bold mb-3 drop-shadow-lg"
                         initial={{ y: 30, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.6, delay: 0.4 }}
@@ -99,7 +99,7 @@ export default function AdminLogin() {
                     </motion.h1>
                     
                     <motion.p 
-                        className="text-base lg:text-lg mb-6 text-orange-100 max-w-md"
+                        className="text-base lg:text-lg mb-6 text-blue-100 max-w-md"
                         initial={{ y: 30, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.6, delay: 0.6 }}
@@ -114,7 +114,7 @@ export default function AdminLogin() {
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.6, delay: 0.8 }}
                     >
-                        <div className="flex items-center justify-center gap-2 text-orange-100 text-sm">
+                        <div className="flex items-center justify-center gap-2 text-blue-100 text-sm">
                             <Shield className="w-4 h-4" />
                             Authorized personnel only
                         </div>
@@ -187,7 +187,7 @@ export default function AdminLogin() {
                                         placeholder="admin@gmail.com"
                                         value={form.email}
                                         onChange={handleChange}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
                                         required
                                     />
                                 </div>
@@ -203,7 +203,7 @@ export default function AdminLogin() {
                                         placeholder="Enter admin password"
                                         value={form.password}
                                         onChange={handleChange}
-                                        className="w-full pl-10 pr-12 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
+                                        className="w-full pl-10 pr-12 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50 backdrop-blur-sm"
                                         required
                                     />
                                     <button
@@ -220,7 +220,7 @@ export default function AdminLogin() {
 
                             <motion.button
                                 type="submit"
-                                className="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white py-2 rounded-xl font-semibold hover:from-red-700 hover:to-orange-700 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm"
+                                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 text-sm"
                                 disabled={loading}
                                 variants={fieldUp}
                                 whileHover={!loading ? { scale: 1.02 } : {}}
@@ -249,7 +249,7 @@ export default function AdminLogin() {
                         >
                             <p className="text-gray-600 text-sm">
                                 Regular user?{' '}
-                                <a href="/login" className="text-red-600 hover:text-red-700 font-semibold transition-colors">
+                                <a href="/login" className="text-blue-600 hover:text-blue-700 font-semibold transition-colors">
                                     Sign in here
                                 </a>
                             </p>

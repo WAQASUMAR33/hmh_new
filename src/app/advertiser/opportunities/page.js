@@ -293,10 +293,18 @@ export default function AdvertiserOpportunitiesPage() {
         setSending(false);
     }
 
-        async function openChat(opportunity) {
-        // Open chat modal directly on the opportunities page
-        setSelectedOpportunity(opportunity);
-        setIsChatOpen(true);
+    async function openChat(opportunity) {
+        try {
+            setChatLoading(true);
+            // Open chat modal directly on the opportunities page
+            setSelectedOpportunity(opportunity);
+            setIsChatOpen(true);
+        } catch (error) {
+            console.error('Error opening chat:', error);
+            toast.error('Failed to open chat');
+        } finally {
+            setChatLoading(false);
+        }
     }
 
     function closeChat() {
@@ -730,14 +738,14 @@ export default function AdvertiserOpportunitiesPage() {
                                         </div>
 
                                         {/* Tags and Categories */}
-                                        {(details?.geos?.length || details?.verticals?.length) && (
+                                        {((Array.isArray(details?.geos) && details.geos.length > 0) || (Array.isArray(details?.verticals) && details.verticals.length > 0)) && (
                                             <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-4 border border-purple-200">
                                                 <h5 className="text-sm font-semibold text-purple-800 mb-3">Categories & Regions</h5>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {details?.verticals?.slice(0, 5).map((v) => (
+                                                    {Array.isArray(details?.verticals) && details.verticals.slice(0, 5).map((v) => (
                                                         <Pill key={v} variant="primary">{v}</Pill>
                                                     ))}
-                                                    {details?.geos?.slice(0, 5).map((g) => (
+                                                    {Array.isArray(details?.geos) && details.geos.slice(0, 5).map((g) => (
                                                         <Pill key={g} variant="info">
                                                             <Globe2 className="mr-1.5 h-3.5 w-3.5" />
                                                             {g}

@@ -53,7 +53,7 @@ export default function Hero() {
                             Trusted by 10,000+ businesses worldwide
                         </div>
                         
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
                             Global partnerships
                             <br />
                             <span className="gradient-text">that just work</span>

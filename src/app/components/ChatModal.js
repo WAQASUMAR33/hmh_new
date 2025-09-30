@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, X, MessageSquare, User, Building } from 'lucide-react';
 import Image from 'next/image';
 import { toast } from 'react-toastify';
 
-const ChatModal = ({ isOpen, onClose, opportunityId, offerId, bookingId, opportunityTitle, publisher }) => {
+const ChatModal = ({ isOpen, onClose, opportunityId, offerId, bookingId, publisherId, opportunityTitle, publisher }) => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(false);
@@ -14,6 +14,35 @@ const ChatModal = ({ isOpen, onClose, opportunityId, offerId, bookingId, opportu
     const messagesEndRef = useRef(null);
     const [user, setUser] = useState(null);
     const [userLoading, setUserLoading] = useState(true);
+
+    const fetchMessages = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams();
+            if (opportunityId) params.append('opportunityId', opportunityId);
+            if (offerId) params.append('offerId', offerId);
+            if (bookingId) params.append('bookingId', bookingId);
+            if (publisherId) params.append('publisherId', publisherId);
+
+            const response = await fetch(`/api/messages?${params}`);
+            const data = await response.json();
+
+            if (response.ok) {
+                setMessages(data.data || []);
+            } else {
+                toast.error(data.error || 'Failed to load messages');
+            }
+        } catch (error) {
+            console.error('Error fetching messages:', error);
+            toast.error('Failed to load messages');
+        } finally {
+            setLoading(false);
+        }
+    }, [opportunityId, offerId, bookingId, publisherId]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
 
     useEffect(() => {
         const fetchCurrentUser = async () => {
@@ -42,48 +71,25 @@ const ChatModal = ({ isOpen, onClose, opportunityId, offerId, bookingId, opportu
     }, []);
 
     useEffect(() => {
-        if (isOpen && (opportunityId || offerId || bookingId)) {
+        if (isOpen && (opportunityId || offerId || bookingId || publisherId)) {
             fetchMessages();
         }
-    }, [isOpen, opportunityId, offerId, bookingId]);
+    }, [isOpen, opportunityId, offerId, bookingId, publisherId, fetchMessages]);
 
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-
-    const fetchMessages = async () => {
-        setLoading(true);
-        try {
-            const params = new URLSearchParams();
-            if (opportunityId) params.append('opportunityId', opportunityId);
-            if (offerId) params.append('offerId', offerId);
-            if (bookingId) params.append('bookingId', bookingId);
-
-            const response = await fetch(`/api/messages?${params}`);
-            const data = await response.json();
-
-            if (response.ok) {
-                setMessages(data.data || []);
-            } else {
-                toast.error(data.error || 'Failed to load messages');
-            }
-        } catch (error) {
-            console.error('Error fetching messages:', error);
-            toast.error('Failed to load messages');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const sendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim() || sending) return;
 
+        const messageToSend = newMessage.trim();
         setSending(true);
+        
+        // Clear the input immediately for better UX
+        setNewMessage('');
+        
         try {
             const response = await fetch('/api/messages', {
                 method: 'POST',
@@ -94,7 +100,8 @@ const ChatModal = ({ isOpen, onClose, opportunityId, offerId, bookingId, opportu
                     opportunityId,
                     offerId,
                     bookingId,
-                    body: newMessage.trim(),
+                    publisherId,
+                    content: messageToSend,
                 }),
             });
 
@@ -102,13 +109,17 @@ const ChatModal = ({ isOpen, onClose, opportunityId, offerId, bookingId, opportu
 
             if (response.ok) {
                 setMessages(prev => [...prev, data.data]);
-                setNewMessage('');
+                toast.success('Message sent successfully');
             } else {
+                // If message failed to send, put it back in the input
+                setNewMessage(messageToSend);
                 toast.error(data.error || 'Failed to send message');
             }
         } catch (error) {
+            // If network error, put message back in the input
+            setNewMessage(messageToSend);
             console.error('Error sending message:', error);
-            toast.error('Failed to send message');
+            toast.error('Failed to send message - check your connection');
         } finally {
             setSending(false);
         }
@@ -271,7 +282,7 @@ const ChatModal = ({ isOpen, onClose, opportunityId, offerId, bookingId, opportu
                                                             ? 'bg-violet-600 text-white'
                                                             : 'bg-gray-100 text-gray-900'
                                                     }`}>
-                                                        <p className="text-sm">{message.body}</p>
+                                                        <p className="text-sm">{message.content}</p>
                                                     </div>
                                                     <div className={`text-xs text-gray-500 mt-1 ${
                                                         isOwnMessage(message) ? 'text-right' : ''
@@ -295,7 +306,7 @@ const ChatModal = ({ isOpen, onClose, opportunityId, offerId, bookingId, opportu
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Type your message..."
-                                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+                                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent text-black placeholder-gray-500"
                                     disabled={sending}
                                 />
                                 <motion.button

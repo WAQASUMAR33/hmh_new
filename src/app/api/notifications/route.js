@@ -20,20 +20,7 @@ export async function GET(req) {
 
         // Only add read filter if the field is available
         if (unreadOnly) {
-            try {
-                // Test if the read field exists by trying to access it
-                const testNotification = await prisma.notification.findFirst({
-                    where: { userId: session.id },
-                    select: { read: true }
-                });
-                
-                if (testNotification && 'read' in testNotification) {
-                    whereClause.read = false;
-                }
-            } catch (fieldError) {
-                console.warn('Read field not available in Prisma client:', fieldError.message);
-                // Continue without the read filter
-            }
+            whereClause.isRead = false;
         }
 
         const notifications = await prisma.notification.findMany({
@@ -49,8 +36,7 @@ export async function GET(req) {
                 bookingId: true,
                 type: true,
                 title: true,
-                // Only select read field if it exists
-                ...(await checkFieldExists('read') ? { read: true } : {}),
+                isRead: true,
                 createdAt: true,
                 sender: {
                     select: {
@@ -80,17 +66,6 @@ export async function GET(req) {
     }
 }
 
-// Helper function to check if a field exists in the Prisma model
-async function checkFieldExists(fieldName) {
-    try {
-        const testResult = await prisma.notification.findFirst({
-            select: { [fieldName]: true }
-        });
-        return testResult && fieldName in testResult;
-    } catch (error) {
-        return false;
-    }
-}
 
 // POST /api/notifications - Mark notification as read
 export async function POST(req) {
@@ -102,15 +77,6 @@ export async function POST(req) {
 
         const { notificationId } = await req.json();
 
-        // Check if read field exists before trying to use it
-        const readFieldExists = await checkFieldExists('read');
-        
-        if (!readFieldExists) {
-            return NextResponse.json({ 
-                error: 'Read functionality not available in current Prisma client' 
-            }, { status: 501 });
-        }
-
         if (notificationId) {
             // Mark specific notification as read
             await prisma.notification.update({
@@ -118,16 +84,16 @@ export async function POST(req) {
                     id: notificationId,
                     userId: session.id
                 },
-                data: { read: true }
+                data: { isRead: true }
             });
         } else {
             // Mark all notifications as read
             await prisma.notification.updateMany({
                 where: {
                     userId: session.id,
-                    read: false
+                    isRead: false
                 },
-                data: { read: true }
+                data: { isRead: true }
             });
         }
 

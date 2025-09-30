@@ -80,7 +80,7 @@ export async function GET(req) {
                         opportunityStatus: opportunity.status,
                         participant: group.advertiser, // The advertiser they're talking to
                         lastMessage: {
-                            body: lastMessage.body,
+                            content: lastMessage.content,
                             createdAt: lastMessage.createdAt,
                             author: lastMessage.author
                         },
@@ -91,6 +91,89 @@ export async function GET(req) {
                 });
             });
 
+            // Also get direct messages to this publisher (not tied to opportunities)
+            const directMessages = await prisma.message.findMany({
+                where: {
+                    OR: [
+                        { recipientId: session.id }, // Messages sent to this publisher
+                        { authorId: session.id, recipientId: { not: null } } // Messages sent by this publisher to advertisers
+                    ]
+                },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                            role: true,
+                            image: true,
+                            companyLegalName: true,
+                            brandName: true,
+                        }
+                    }
+                }
+            });
+
+            // Group direct messages by advertiser
+            const directMessageGroups = {};
+            
+            for (const message of directMessages) {
+                const advertiserId = message.authorId === session.id ? message.recipientId : message.authorId;
+                if (message.author.role === 'ADVERTISER' || (message.authorId === session.id && message.recipientId)) {
+                    if (!directMessageGroups[advertiserId]) {
+                        // Get advertiser info if message was sent by publisher
+                        let advertiser = message.author;
+                        if (message.authorId === session.id && message.recipientId) {
+                            advertiser = await prisma.user.findUnique({ 
+                                where: { id: advertiserId },
+                                select: {
+                                    id: true,
+                                    firstName: true,
+                                    lastName: true,
+                                    email: true,
+                                    role: true,
+                                    image: true,
+                                    companyLegalName: true,
+                                    brandName: true,
+                                }
+                            });
+                        }
+                        
+                        directMessageGroups[advertiserId] = {
+                            advertiser: advertiser,
+                            messages: []
+                        };
+                    }
+                    directMessageGroups[advertiserId].messages.push(message);
+                }
+            }
+
+            // Create conversations for direct messages
+            for (const [advertiserId, group] of Object.entries(directMessageGroups)) {
+                if (group.advertiser) {
+                    const lastMessage = group.messages[0]; // Already sorted by desc
+                    conversations.push({
+                        id: `direct_${advertiserId}_pub_${session.id}`,
+                        type: 'direct',
+                        opportunityId: null,
+                        opportunityTitle: `Direct conversation with ${group.advertiser.firstName} ${group.advertiser.lastName}`,
+                        opportunitySlug: null,
+                        opportunityStatus: null,
+                        participant: group.advertiser,
+                        lastMessage: {
+                            content: lastMessage.content,
+                            createdAt: lastMessage.createdAt,
+                            author: lastMessage.author
+                        },
+                        messageCount: group.messages.length,
+                        createdAt: lastMessage.createdAt,
+                        lastActivity: lastMessage.createdAt
+                    });
+                }
+            }
+
         } else if (session.role === 'ADVERTISER') {
             // For advertisers: Get conversations with publishers about opportunities
             const messagesFromAdvertiser = await prisma.message.findMany({
@@ -100,7 +183,7 @@ export async function GET(req) {
                 },
                 select: {
                     id: true,
-                    body: true,
+                    content: true,
                     createdAt: true,
                     opportunity: {
                         select: {
@@ -173,7 +256,7 @@ export async function GET(req) {
                     opportunityStatus: group.opportunity.status,
                     participant: group.opportunity.publisher, // The publisher they're talking to
                     lastMessage: {
-                        body: lastMessage.body,
+                        content: lastMessage.content,
                         createdAt: lastMessage.createdAt,
                         author: lastMessage.author
                     },
@@ -182,6 +265,89 @@ export async function GET(req) {
                     lastActivity: lastMessage.createdAt
                 });
             });
+
+            // Also get direct messages to publishers (not tied to opportunities)
+            const directMessages = await prisma.message.findMany({
+                where: {
+                    OR: [
+                        { authorId: session.id, recipientId: { not: null } }, // Messages sent by this advertiser to publishers
+                        { recipientId: session.id } // Messages sent to this advertiser
+                    ]
+                },
+                orderBy: { createdAt: 'desc' },
+                include: {
+                    author: {
+                        select: {
+                            id: true,
+                            firstName: true,
+                            lastName: true,
+                            email: true,
+                            role: true,
+                            image: true,
+                            companyLegalName: true,
+                            brandName: true,
+                        }
+                    }
+                }
+            });
+
+            // Group direct messages by publisher
+            const directMessageGroups = {};
+            
+            for (const message of directMessages) {
+                const publisherId = message.authorId === session.id ? message.recipientId : message.authorId;
+                if (message.author.role === 'PUBLISHER' || (message.authorId === session.id && message.recipientId)) {
+                    if (!directMessageGroups[publisherId]) {
+                        // Get publisher info if message was sent by advertiser
+                        let publisher = message.author;
+                        if (message.authorId === session.id && message.recipientId) {
+                            publisher = await prisma.user.findUnique({ 
+                                where: { id: publisherId },
+                                select: {
+                                    id: true,
+                                    firstName: true,
+                                    lastName: true,
+                                    email: true,
+                                    role: true,
+                                    image: true,
+                                    companyLegalName: true,
+                                    brandName: true,
+                                }
+                            });
+                        }
+                        
+                        directMessageGroups[publisherId] = {
+                            publisher: publisher,
+                            messages: []
+                        };
+                    }
+                    directMessageGroups[publisherId].messages.push(message);
+                }
+            }
+
+            // Create conversations for direct messages
+            for (const [publisherId, group] of Object.entries(directMessageGroups)) {
+                if (group.publisher) {
+                    const lastMessage = group.messages[0]; // Already sorted by desc
+                    conversations.push({
+                        id: `direct_${publisherId}_adv_${session.id}`,
+                        type: 'direct',
+                        opportunityId: null,
+                        opportunityTitle: `Direct conversation with ${group.publisher.firstName} ${group.publisher.lastName}`,
+                        opportunitySlug: null,
+                        opportunityStatus: null,
+                        participant: group.publisher,
+                        lastMessage: {
+                            content: lastMessage.content,
+                            createdAt: lastMessage.createdAt,
+                            author: lastMessage.author
+                        },
+                        messageCount: group.messages.length,
+                        createdAt: lastMessage.createdAt,
+                        lastActivity: lastMessage.createdAt
+                    });
+                }
+            }
         }
 
         // Sort by last activity

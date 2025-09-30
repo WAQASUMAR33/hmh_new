@@ -108,7 +108,7 @@ export default function LoginPage() {
                     </motion.div>
 
                     <motion.h1 
-                        className="text-2xl lg:text-3xl font-bold mb-3 drop-shadow-lg"
+                        className="text-xl lg:text-2xl font-bold mb-3 drop-shadow-lg"
                         initial={{ y: 30, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ duration: 0.6, delay: 0.4 }}
@@ -194,7 +194,7 @@ export default function LoginPage() {
                         variants={fieldUp}
                     >
                         <motion.div className="text-center mb-6" variants={fieldUp}>
-                            <h2 className="text-2xl font-bold text-gray-800 mb-1">Sign In</h2>
+                            <h2 className="text-xl font-bold text-gray-800 mb-1">Sign In</h2>
                             <p className="text-gray-600 text-sm">Enter your credentials to access your account</p>
                         </motion.div>
 

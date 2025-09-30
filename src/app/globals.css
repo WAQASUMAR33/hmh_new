@@ -94,18 +94,28 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 {
-  font-size: clamp(2.5rem, 5vw, 4rem);
-  font-weight: 800;
-}
-
-h2 {
-  font-size: clamp(2rem, 4vw, 3rem);
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
   font-weight: 700;
 }
 
-h3 {
+h2 {
   font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 600;
+}
+
+h3 {
+  font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+  font-weight: 600;
+}
+
+/* Input Field Styles */
+input, textarea, select {
+  color: #000000 !important; /* Black text */
+  background-color: #ffffff !important; /* White background */
+}
+
+input::placeholder, textarea::placeholder {
+  color: #6b7280 !important; /* Gray placeholder text */
 }
 
 /* Modern Button Styles */

@@ -83,7 +83,7 @@ export default function WhatHMHOffer() {
                         <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
                         Our Services
                     </div>
-                    <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+                    <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
                         What <span className="gradient-text">HMH Offers</span>
                     </h2>
                     <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
