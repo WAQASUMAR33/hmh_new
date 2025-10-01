@@ -65,7 +65,7 @@ export default function HowToStart() {
 
     return (
         <motion.section
-            className="bg-gradient-to-br from-indigo-50 via-white to-blue-50 py-20 px-4 select-none"
+            className="bg-white py-20 px-4 select-none"
             variants={sectionFade}
             initial="hidden"
             whileInView="show"

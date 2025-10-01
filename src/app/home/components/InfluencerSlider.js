@@ -95,7 +95,7 @@ export default function InfluencerSlider() {
 
     return (
         <motion.section
-            className="py-10 px-4"
+            className="py-10 px-4 bg-white"
             initial="hidden"
             whileInView="show"
             viewport={{ once: true, amount: 0.2 }}
@@ -103,7 +103,7 @@ export default function InfluencerSlider() {
         >
             <div
                 {...handlers}
-                className="max-w-[1250px] mx-auto bg-[#ECEDFA]  rounded-xl overflow-hidden relative min-h-[460px]"
+                className="max-w-[1250px] mx-auto bg-[#ECEDFA] rounded-xl overflow-hidden relative min-h-[460px] shadow-xl hover:shadow-2xl transition-shadow duration-300"
             >
                 {/* Slide container (kept as-is for your carousel logic) */}
                 <div
@@ -198,7 +198,7 @@ export default function InfluencerSlider() {
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
                             aria-label={`Go to slide ${index + 1}`}
-                            className={`w-[12px] h-[12px] rounded-full border border-black ${current === index ? "bg-black" : "bg-transparent"
+                            className={`w-[12px] h-[12px] rounded-full border border-blue-600 ${current === index ? "bg-blue-600" : "bg-transparent"
                                 }`}
                         />
                     ))}
@@ -210,7 +210,7 @@ export default function InfluencerSlider() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setCurrent((p) => (p === 0 ? slides.length - 1 : p - 1))}
-                        className="w-10 h-10 flex items-center justify-center bg-black text-white rounded-full text-xl"
+                        className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-full text-xl shadow-lg hover:shadow-xl"
                         aria-label="Previous slide"
                     >
                         &#8592;
@@ -219,7 +219,7 @@ export default function InfluencerSlider() {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setCurrent((p) => (p + 1) % slides.length)}
-                        className="w-10 h-10 flex items-center justify-center bg-black text-white rounded-full text-xl"
+                        className="w-10 h-10 flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-600 text-white rounded-full text-xl shadow-lg hover:shadow-xl"
                         aria-label="Next slide"
                     >
                         &#8594;

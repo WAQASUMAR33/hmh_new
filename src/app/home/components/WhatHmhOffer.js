@@ -65,7 +65,7 @@ export default function WhatHMHOffer() {
 
     return (
         <motion.section
-            className="bg-gradient-to-br from-gray-50 to-blue-50 py-20 px-4 select-none"
+            className="bg-white py-20 px-4 select-none"
             variants={sectionFade}
             initial="hidden"
             whileInView="show"

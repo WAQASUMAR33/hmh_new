@@ -29,7 +29,7 @@ const imgIn = {
 export default function Hero() {
     return (
         <motion.section
-            className="relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50"
+            className="relative overflow-hidden bg-white"
             variants={sectionIn}
             initial="hidden"
             whileInView="show"

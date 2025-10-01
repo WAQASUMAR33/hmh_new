@@ -20,7 +20,7 @@ const scaleIn = {
 export default function PublisherSolutions() {
     return (
         <motion.section
-            className="py-16 px-4 select-none bg-gray-50"
+            className="py-16 px-4 select-none bg-white"
             variants={container}
             initial="hidden"
             whileInView="show"

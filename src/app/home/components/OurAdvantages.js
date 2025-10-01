@@ -44,7 +44,7 @@ export default function OurAdvantages() {
 
     return (
         <motion.section
-            className="relative overflow-hidden bg-[#f4f5fc] py-16 px-4 select-none"
+            className="relative overflow-hidden bg-white py-16 px-4 select-none"
             variants={sectionFade}
             initial="hidden"
             whileInView="show"
