@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/app/lib/prisma';
 import { getSessionOrNull } from '@/app/api/_lib/auth';
 
-// GET /api/notifications - Get notifications for current user
+
 export async function GET(req) {
     try {
         const session = await getSessionOrNull();
