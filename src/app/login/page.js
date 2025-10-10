@@ -50,6 +50,21 @@ export default function LoginPage() {
             const data = await res.json();
 
             if (!res.ok) {
+                // Check if user is suspended
+                if (data.suspended) {
+                    // Store suspension info and redirect to suspended page
+                    localStorage.setItem('suspendedUser', JSON.stringify({
+                        email: form.email,
+                        suspensionReason: data.suspensionReason,
+                        suspensionDate: data.suspensionDate
+                    }));
+                    
+                    // Determine user type from email or other means
+                    // For now, we'll redirect to a generic suspended page
+                    router.push('/suspended');
+                    return;
+                }
+                
                 setErrorMsg(data.message || 'Login failed');
                 setLoading(false);
                 return;

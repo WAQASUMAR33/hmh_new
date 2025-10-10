@@ -16,7 +16,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
 
-export default function SuspendedAccount() {
+export default function AdvertiserSuspendedAccount() {
     const [user, setUser] = useState(null);
     const [suspensionReason, setSuspensionReason] = useState('');
     const [appealMessage, setAppealMessage] = useState('');
@@ -28,7 +28,6 @@ export default function SuspendedAccount() {
 
         async function init() {
             try {
-                // Prefer server truth for auth + suspension state
                 const res = await fetch('/api/user/me', { credentials: 'include' });
                 const json = await res.json();
 
@@ -39,9 +38,8 @@ export default function SuspendedAccount() {
 
                 const currentUser = json.user;
 
-                // If not suspended, do not allow access to suspended page
                 if (!currentUser.isSuspended) {
-                    router.push('/publisher');
+                    router.push('/advertiser');
                     return;
                 }
 
@@ -50,10 +48,9 @@ export default function SuspendedAccount() {
                     setSuspensionReason(currentUser.suspensionReason || '');
                 }
             } catch (_e) {
-                // Fallback to local storage if API fails
                 const userData = localStorage.getItem('userData');
                 const userRole = localStorage.getItem('userRole');
-                if (!userData || userRole !== 'publisher') {
+                if (!userData || userRole !== 'advertiser') {
                     router.push('/login');
                     return;
                 }
@@ -96,7 +93,7 @@ export default function SuspendedAccount() {
                 },
                 body: JSON.stringify({
                     userId: user.id,
-                    userType: 'publisher',
+                    userType: 'advertiser',
                     originalSuspensionReason: suspensionReason,
                     appealMessage: appealMessage
                 })
@@ -109,7 +106,7 @@ export default function SuspendedAccount() {
                 setAppealMessage('');
             } else if (data.error === 'User is not suspended') {
                 toast.error('Your account is not suspended anymore. Redirecting to your dashboard...');
-                router.push('/publisher');
+                router.push('/advertiser');
             } else {
                 toast.error(data.error || 'Failed to submit appeal');
             }
@@ -177,7 +174,7 @@ export default function SuspendedAccount() {
                     </h1>
                     
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                        Your account has been temporarily suspended. Please review the information below and submit an appeal if you believe this action was taken in error.
+                        Your advertiser account has been temporarily suspended. Please review the information below and submit an appeal if you believe this action was taken in error.
                     </p>
                 </motion.div>
 
@@ -319,4 +316,3 @@ export default function SuspendedAccount() {
         </div>
     );
 }
-

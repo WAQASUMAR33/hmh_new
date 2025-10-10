@@ -20,6 +20,7 @@ export async function POST(req) {
                 id: true, email: true, password: true, role: true,
                 firstName: true, lastName: true,
                 emailVerified: true, isActivated: true,
+                isSuspended: true, suspensionReason: true, suspensionDate: true,
             },
         });
         if (!user) return NextResponse.json({ message: "Invalid credentials." }, { status: 401 });
@@ -29,6 +30,16 @@ export async function POST(req) {
 
         if (!user.emailVerified) return NextResponse.json({ message: "Please verify your email before logging in." }, { status: 403 });
         if (!user.isActivated) return NextResponse.json({ message: "Account not activated by admin." }, { status: 403 });
+        
+        // Check if user is suspended
+        if (user.isSuspended) {
+            return NextResponse.json({ 
+                message: "Account suspended", 
+                suspended: true,
+                suspensionReason: user.suspensionReason,
+                suspensionDate: user.suspensionDate
+            }, { status: 403 });
+        }
 
         const token = jwt.sign({ 
             sub: user.id, 

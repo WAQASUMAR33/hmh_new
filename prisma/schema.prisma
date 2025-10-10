@@ -39,6 +39,10 @@ model User {
   image                   String?
   stripeAccountId         String?
   termsAndConditions      String?
+  isSuspended             Boolean        @default(false)
+  suspensionReason        String?
+  suspensionDate          DateTime?
+  suspendedBy             String?
   advertiserBookings      Booking[]      @relation("AdvertiserBookings")
   publisherBookings       Booking[]      @relation("PublisherBookings")
   advertiserConversations Conversation[] @relation("AdvertiserConversations")
@@ -48,6 +52,7 @@ model User {
   notifications           Notification[] @relation("UserNotifications")
   offers                  Offer[]        @relation("AdvertiserOffers")
   opportunities           Opportunity[]  @relation("PublisherOpportunities")
+  appeals                 Appeal[]       @relation("UserAppeals")
 }
 
 model Opportunity {
@@ -320,4 +325,29 @@ enum PaymentStatus {
   REFUNDED
   FAILED
   CANCELLED
+}
+
+model Appeal {
+  id                    String      @id @default(cuid())
+  userId                String
+  userType              String      // 'publisher' or 'advertiser'
+  originalSuspensionReason String
+  appealMessage         String
+  status                AppealStatus @default(PENDING)
+  adminResponse         String?
+  responseDate          DateTime?
+  respondedBy           String?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  user                  User        @relation("UserAppeals", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum AppealStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

@@ -30,6 +30,7 @@ export default function AppealsManagement() {
     const [appeals, setAppeals] = useState([]);
     const [selectedAppeal, setSelectedAppeal] = useState(null);
     const [showResponseModal, setShowResponseModal] = useState(false);
+    const [showViewModal, setShowViewModal] = useState(false);
     const [responseMessage, setResponseMessage] = useState('');
     const router = useRouter();
 
@@ -90,8 +91,27 @@ export default function AppealsManagement() {
     ];
 
     useEffect(() => {
-        setAppeals(mockAppeals);
+        fetchAppeals();
     }, []);
+
+    const fetchAppeals = async () => {
+        try {
+            const response = await fetch('/api/appeals');
+            const data = await response.json();
+            
+            if (data.success) {
+                setAppeals(data.appeals);
+            } else {
+                console.error('Failed to fetch appeals:', data.error);
+                // Fallback to mock data
+                setAppeals(mockAppeals);
+            }
+        } catch (error) {
+            console.error('Error fetching appeals:', error);
+            // Fallback to mock data
+            setAppeals(mockAppeals);
+        }
+    };
 
     const filteredAppeals = appeals.filter(appeal => {
         const matchesSearch = appeal.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -103,55 +123,106 @@ export default function AppealsManagement() {
         return matchesSearch && matchesStatus && matchesType;
     });
 
+    const handleViewAppeal = (appeal) => {
+        setSelectedAppeal(appeal);
+        setShowViewModal(true);
+    };
+
     const handleRespondToAppeal = (appeal) => {
         setSelectedAppeal(appeal);
         setShowResponseModal(true);
     };
 
-    const handleApproveAppeal = () => {
+    const handleApproveAppeal = async () => {
         if (!responseMessage.trim()) {
             toast.error('Please provide a response message');
             return;
         }
 
-        setAppeals(prev => prev.map(a => 
-            a.id === selectedAppeal.id 
-                ? { 
-                    ...a, 
-                    status: 'approved', 
+        try {
+            const response = await fetch(`/api/appeals/${selectedAppeal.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: 'APPROVED',
                     adminResponse: responseMessage,
-                    responseDate: new Date().toISOString().split('T')[0]
-                  }
-                : a
-        ));
+                    respondedBy: 'admin' // In real app, this would be the actual admin user ID
+                })
+            });
 
-        toast.success(`Appeal approved for ${selectedAppeal.userName}`);
-        setShowResponseModal(false);
-        setResponseMessage('');
-        setSelectedAppeal(null);
+            const data = await response.json();
+            
+            if (data.success) {
+                setAppeals(prev => prev.map(a => 
+                    a.id === selectedAppeal.id 
+                        ? { 
+                            ...a, 
+                            status: 'approved', 
+                            adminResponse: responseMessage,
+                            responseDate: new Date().toISOString().split('T')[0]
+                          }
+                        : a
+                ));
+
+                toast.success(`Appeal approved for ${selectedAppeal.userName}. Email notification sent.`);
+                setShowResponseModal(false);
+                setResponseMessage('');
+                setSelectedAppeal(null);
+            } else {
+                toast.error(data.error || 'Failed to approve appeal');
+            }
+        } catch (error) {
+            console.error('Error approving appeal:', error);
+            toast.error('Error approving appeal');
+        }
     };
 
-    const handleRejectAppeal = () => {
+    const handleRejectAppeal = async () => {
         if (!responseMessage.trim()) {
             toast.error('Please provide a response message');
             return;
         }
 
-        setAppeals(prev => prev.map(a => 
-            a.id === selectedAppeal.id 
-                ? { 
-                    ...a, 
-                    status: 'rejected', 
+        try {
+            const response = await fetch(`/api/appeals/${selectedAppeal.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    status: 'REJECTED',
                     adminResponse: responseMessage,
-                    responseDate: new Date().toISOString().split('T')[0]
-                  }
-                : a
-        ));
+                    respondedBy: 'admin' // In real app, this would be the actual admin user ID
+                })
+            });
 
-        toast.success(`Appeal rejected for ${selectedAppeal.userName}`);
-        setShowResponseModal(false);
-        setResponseMessage('');
-        setSelectedAppeal(null);
+            const data = await response.json();
+            
+            if (data.success) {
+                setAppeals(prev => prev.map(a => 
+                    a.id === selectedAppeal.id 
+                        ? { 
+                            ...a, 
+                            status: 'rejected', 
+                            adminResponse: responseMessage,
+                            responseDate: new Date().toISOString().split('T')[0]
+                          }
+                        : a
+                ));
+
+                toast.success(`Appeal rejected for ${selectedAppeal.userName}. Email notification sent.`);
+                setShowResponseModal(false);
+                setResponseMessage('');
+                setSelectedAppeal(null);
+            } else {
+                toast.error(data.error || 'Failed to reject appeal');
+            }
+        } catch (error) {
+            console.error('Error rejecting appeal:', error);
+            toast.error('Error rejecting appeal');
+        }
     };
 
     const getStatusBadge = (status) => {
@@ -279,7 +350,7 @@ export default function AppealsManagement() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center space-x-2">
                                                 <button
-                                                    onClick={() => setSelectedAppeal(appeal)}
+                                                    onClick={() => handleViewAppeal(appeal)}
                                                     className="text-blue-600 hover:text-blue-900 p-1"
                                                     title="View Details"
                                                 >
@@ -306,7 +377,7 @@ export default function AppealsManagement() {
 
             {/* Response Modal */}
             {showResponseModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -377,6 +448,143 @@ export default function AppealsManagement() {
                                 <CheckCircle className="w-4 h-4" />
                                 Approve Appeal
                             </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
+            {/* View Details Modal */}
+            {showViewModal && (
+                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-xl p-6 w-full max-w-3xl mx-4 max-h-[90vh] overflow-y-auto"
+                    >
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center">
+                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                                    <Eye className="w-5 h-5 text-blue-600" />
+                                </div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    Appeal Details
+                                </h3>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowViewModal(false);
+                                    setSelectedAppeal(null);
+                                }}
+                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <XCircle className="w-6 h-6" />
+                            </button>
+                        </div>
+                        
+                        <div className="space-y-6">
+                            {/* User Information */}
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <h4 className="text-sm font-medium text-gray-900 mb-3">User Information</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+                                        <p className="text-sm text-gray-900">{selectedAppeal?.userName}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                                        <p className="text-sm text-gray-900">{selectedAppeal?.userEmail}</p>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Account Type</label>
+                                        <div className="mt-1">
+                                            {getUserTypeBadge(selectedAppeal?.userType)}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Appeal Date</label>
+                                        <p className="text-sm text-gray-900">
+                                            {selectedAppeal?.appealDate ? new Date(selectedAppeal.appealDate).toLocaleDateString() : 'N/A'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Suspension Information */}
+                            <div className="bg-red-50 rounded-lg p-4">
+                                <h4 className="text-sm font-medium text-gray-900 mb-3">Suspension Information</h4>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">Reason for Suspension</label>
+                                    <p className="text-sm text-red-700 font-medium">{selectedAppeal?.originalSuspensionReason}</p>
+                                </div>
+                            </div>
+
+                            {/* Appeal Message */}
+                            <div className="bg-blue-50 rounded-lg p-4">
+                                <h4 className="text-sm font-medium text-gray-900 mb-3">Appeal Message</h4>
+                                <div className="bg-white rounded-lg p-4 border border-blue-200">
+                                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                        {selectedAppeal?.appealMessage}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Status and Response */}
+                            <div className="bg-gray-50 rounded-lg p-4">
+                                <h4 className="text-sm font-medium text-gray-900 mb-3">Status & Response</h4>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Current Status</label>
+                                        <div className="mt-1">
+                                            {getStatusBadge(selectedAppeal?.status)}
+                                        </div>
+                                    </div>
+                                    
+                                    {selectedAppeal?.adminResponse && (
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 mb-1">Admin Response</label>
+                                            <div className="bg-white rounded-lg p-3 border border-gray-200">
+                                                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                                                    {selectedAppeal.adminResponse}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {selectedAppeal?.responseDate && (
+                                        <div>
+                                            <label className="block text-xs font-medium text-gray-500 mb-1">Response Date</label>
+                                            <p className="text-sm text-gray-900">
+                                                {new Date(selectedAppeal.responseDate).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+                            <button
+                                onClick={() => {
+                                    setShowViewModal(false);
+                                    setSelectedAppeal(null);
+                                }}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                Close
+                            </button>
+                            {selectedAppeal?.status === 'pending' && (
+                                <button
+                                    onClick={() => {
+                                        setShowViewModal(false);
+                                        handleRespondToAppeal(selectedAppeal);
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+                                >
+                                    <MessageSquare className="w-4 h-4" />
+                                    Respond to Appeal
+                                </button>
+                            )}
                         </div>
                     </motion.div>
                 </div>

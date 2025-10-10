@@ -22,6 +22,21 @@ import { toast } from 'react-toastify';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import AdminLayout from '../components/AdminLayout';
+import { 
+    ROLES, 
+    MODULES, 
+    PERMISSIONS, 
+    getRoleDisplayName, 
+    getModuleDisplayName, 
+    getPermissionDisplayName,
+    getAvailableRoles,
+    getAvailableModules,
+    getModulePermissions,
+    canCreateUser,
+    canAssignRole,
+    canDeleteUser,
+    canEditUser
+} from '../utils/rolePermissions';
 
 export default function UserManagement() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,84 +44,40 @@ export default function UserManagement() {
     const [users, setUsers] = useState([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState(null);
     const [newUser, setNewUser] = useState({
         firstName: '',
         lastName: '',
         email: '',
+        username: '',
         phone: '',
-        role: 'manager',
+        role: ROLES.MANAGER, // Default to manager, user can select from dropdown
         permissions: [],
+        modules: [],
         password: ''
     });
     const router = useRouter();
 
-    // Mock data for admin users
-    const mockUsers = [
-        {
-            id: 1,
-            firstName: 'Super',
-            lastName: 'Admin',
-            email: 'super.admin@hmh.com',
-            phone: '+1-555-0001',
-            role: 'super_admin',
-            permissions: ['all'],
-            createdDate: '2023-10-01',
-            lastActive: '2024-01-21',
-            status: 'active'
-        },
-        {
-            id: 2,
-            firstName: 'John',
-            lastName: 'Smith',
-            email: 'john.smith@hmh.com',
-            phone: '+1-555-0002',
-            role: 'admin',
-            permissions: ['user_management', 'publisher_management', 'advertiser_management', 'reports'],
-            createdDate: '2024-01-15',
-            lastActive: '2024-01-20',
-            status: 'active'
-        },
-        {
-            id: 3,
-            firstName: 'Sarah',
-            lastName: 'Johnson',
-            email: 'sarah.johnson@hmh.com',
-            phone: '+1-555-0003',
-            role: 'admin',
-            permissions: ['publisher_management', 'advertiser_management', 'reports'],
-            createdDate: '2023-11-22',
-            lastActive: '2024-01-18',
-            status: 'active'
-        },
-        {
-            id: 4,
-            firstName: 'David',
-            lastName: 'Wilson',
-            email: 'david.wilson@hmh.com',
-            phone: '+1-555-0004',
-            role: 'manager',
-            permissions: ['publisher_management', 'reports'],
-            createdDate: '2024-01-10',
-            lastActive: '2024-01-21',
-            status: 'active'
-        },
-        {
-            id: 5,
-            firstName: 'Lisa',
-            lastName: 'Martinez',
-            email: 'lisa.martinez@hmh.com',
-            phone: '+1-555-0005',
-            role: 'manager',
-            permissions: ['advertiser_management'],
-            createdDate: '2023-12-15',
-            lastActive: '2024-01-15',
-            status: 'suspended'
+    // Fetch admin users from API
+    const fetchUsers = async () => {
+        try {
+            const response = await fetch('/api/admin/users');
+            const data = await response.json();
+            
+            if (data.success) {
+                setUsers(data.users);
+            } else {
+                toast.error('Failed to fetch admin users');
+            }
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            toast.error('Error fetching admin users');
         }
-    ];
+    };
 
     useEffect(() => {
-        setUsers(mockUsers);
+        fetchUsers();
     }, []);
 
     const filteredUsers = users.filter(user => {
@@ -124,12 +95,19 @@ export default function UserManagement() {
             firstName: '',
             lastName: '',
             email: '',
+            username: '',
             phone: '',
-            role: 'manager',
+            role: ROLES.MANAGER, // Default to manager
             permissions: [],
+            modules: [],
             password: ''
         });
         setShowCreateModal(true);
+    };
+
+    const handleViewProfile = (user) => {
+        setSelectedUser(user);
+        setShowProfileModal(true);
     };
 
     const handleEditUser = (user) => {
@@ -138,17 +116,19 @@ export default function UserManagement() {
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
+            username: user.email.split('@')[0], // Extract username from email
             phone: user.phone,
             role: user.role,
-            permissions: user.permissions,
+            permissions: user.permissions || [],
+            modules: user.modules || [],
             password: ''
         });
         setShowEditModal(true);
     };
 
-    const handleSaveUser = () => {
+    const handleSaveUser = async () => {
         // Validate form
-        if (!newUser.firstName || !newUser.lastName || !newUser.email) {
+        if (!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.username) {
             toast.error('Please fill in all required fields');
             return;
         }
@@ -158,79 +138,128 @@ export default function UserManagement() {
             return;
         }
 
-        if (showCreateModal) {
-            // Create new admin user
-            const newUserData = {
-                ...newUser,
-                id: users.length + 1,
-                createdDate: new Date().toISOString().split('T')[0],
-                lastActive: new Date().toISOString().split('T')[0],
-                status: 'active'
-            };
-            
-            setUsers(prev => [...prev, newUserData]);
-            toast.success(`Admin user created: ${newUser.firstName} ${newUser.lastName}`);
-        } else {
-            // Update existing user
-            setUsers(prev => prev.map(u => 
-                u.id === selectedUser.id 
-                    ? { ...u, ...newUser }
-                    : u
-            ));
-            toast.success(`Admin user updated: ${newUser.firstName} ${newUser.lastName}`);
-        }
+        try {
+            if (showCreateModal) {
+                // Create new admin user
+                const response = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        firstName: newUser.firstName,
+                        lastName: newUser.lastName,
+                        email: newUser.email,
+                        username: newUser.username,
+                        phone: newUser.phone,
+                        password: newUser.password,
+                        role: newUser.role,
+                        permissions: newUser.permissions,
+                        modules: newUser.modules
+                    })
+                });
 
-        setShowCreateModal(false);
-        setShowEditModal(false);
-        setSelectedUser(null);
+                const data = await response.json();
+                
+                if (data.success) {
+                    toast.success(`Admin user created: ${newUser.firstName} ${newUser.lastName}`);
+                    fetchUsers(); // Refresh the list
+                } else {
+                    toast.error(data.error || 'Failed to create admin user');
+                }
+            } else {
+                // Update existing user
+                const response = await fetch('/api/admin/users', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: selectedUser.id,
+                        firstName: newUser.firstName,
+                        lastName: newUser.lastName,
+                        email: newUser.email,
+                        username: newUser.username,
+                        phone: newUser.phone,
+                        role: newUser.role,
+                        permissions: newUser.permissions,
+                        modules: newUser.modules,
+                        password: newUser.password || undefined // Only include if provided
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    toast.success(`Admin user updated: ${newUser.firstName} ${newUser.lastName}`);
+                    fetchUsers(); // Refresh the list
+                } else {
+                    toast.error(data.error || 'Failed to update admin user');
+                }
+            }
+
+            setShowCreateModal(false);
+            setShowEditModal(false);
+            setSelectedUser(null);
+        } catch (error) {
+            console.error('Error saving user:', error);
+            toast.error('Error saving admin user');
+        }
     };
 
-    const handleDeleteUser = (user) => {
+    const handleDeleteUser = async (user) => {
         if (user.role === 'super_admin') {
             toast.error('Cannot delete Super Admin users');
             return;
         }
 
         if (window.confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}?`)) {
-            setUsers(prev => prev.filter(u => u.id !== user.id));
-            toast.success(`User deleted: ${user.firstName} ${user.lastName}`);
+            try {
+                const response = await fetch(`/api/admin/users?id=${user.id}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    toast.success(`User deleted: ${user.firstName} ${user.lastName}`);
+                    fetchUsers(); // Refresh the list
+                } else {
+                    toast.error(data.error || 'Failed to delete admin user');
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                toast.error('Error deleting admin user');
+            }
         }
     };
 
     const getRoleBadge = (role) => {
         switch (role) {
-            case 'super_admin':
-                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">Super Admin</span>;
-            case 'admin':
-                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Admin</span>;
-            case 'manager':
-                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Manager</span>;
+            case ROLES.SUPER_ADMIN:
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">{getRoleDisplayName(ROLES.SUPER_ADMIN)}</span>;
+            case ROLES.ADMIN:
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">{getRoleDisplayName(ROLES.ADMIN)}</span>;
+            case ROLES.MANAGER:
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{getRoleDisplayName(ROLES.MANAGER)}</span>;
             default:
-                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{role}</span>;
+                return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">{getRoleDisplayName(role)}</span>;
         }
     };
 
-    const getPermissionsDisplay = (permissions) => {
-        if (permissions.includes('all')) {
-            return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">All Permissions</span>;
+    const getPermissionsDisplay = (modules) => {
+        if (!modules || !Array.isArray(modules) || modules.length === 0) {
+            return <span className="text-gray-500 text-sm">No modules assigned</span>;
         }
         
-        const permissionLabels = {
-            'user_management': 'Users',
-            'publisher_management': 'Publishers',
-            'advertiser_management': 'Advertisers',
-            'reports': 'Reports',
-            'system_settings': 'System'
-        };
-        
-        const displayPermissions = permissions.slice(0, 2).map(p => permissionLabels[p] || p);
-        const remaining = permissions.length - 2;
+        const displayModules = modules.slice(0, 2).map(m => getModuleDisplayName(m));
+        const remaining = modules.length - 2;
         
         return (
             <div className="flex flex-wrap gap-1">
-                {displayPermissions.map((perm, index) => (
+                {displayModules.map((module, index) => (
                     <span key={index} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {perm}
+                        {module}
                     </span>
                 ))}
                 {remaining > 0 && (
@@ -302,7 +331,7 @@ export default function UserManagement() {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admin User</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Permissions</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Modules</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
@@ -334,7 +363,7 @@ export default function UserManagement() {
                                             {getRoleBadge(user.role)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            {getPermissionsDisplay(user.permissions)}
+                                            {getPermissionsDisplay(user.modules)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {getStatusBadge(user.status)}
@@ -342,9 +371,9 @@ export default function UserManagement() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center space-x-2">
                                                 <button
-                                                    onClick={() => setSelectedUser(user)}
+                                                    onClick={() => handleViewProfile(user)}
                                                     className="text-blue-600 hover:text-blue-900 p-1"
-                                                    title="View Details"
+                                                    title="View Profile"
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
@@ -381,6 +410,129 @@ export default function UserManagement() {
             >
                 <UserPlus className="w-6 h-6" />
             </button>
+
+            {/* Profile View Modal */}
+            {showProfileModal && (
+                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+                    >
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-semibold text-gray-900">
+                                Admin User Profile: {selectedUser?.firstName} {selectedUser?.lastName}
+                            </h3>
+                            <button
+                                onClick={() => {
+                                    setShowProfileModal(false);
+                                    setSelectedUser(null);
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Basic Information */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <div className="text-sm text-gray-900">{selectedUser?.firstName} {selectedUser?.lastName}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <div className="text-sm text-gray-900">{selectedUser?.email}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                    <div className="text-sm text-gray-900">{selectedUser?.phone || 'N/A'}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                                    <div className="text-sm text-gray-900">{selectedUser?.company || 'N/A'}</div>
+                                </div>
+                            </div>
+
+                            {/* Account Information */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                                    <div className="flex items-center">
+                                        {getRoleBadge(selectedUser?.role)}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
+                                    <div className="flex items-center">
+                                        {getStatusBadge(selectedUser?.status)}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                                    <div className="text-sm text-gray-900">{selectedUser?.id}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Created At</label>
+                                    <div className="text-sm text-gray-900">
+                                        {selectedUser?.createdAt ? new Date(selectedUser.createdAt).toLocaleDateString() : 'N/A'}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Permissions and Modules */}
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                            <h4 className="text-lg font-medium text-gray-900 mb-4">Permissions & Modules</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Assigned Modules</label>
+                                    <div className="space-y-2">
+                                        {selectedUser?.modules && selectedUser.modules.length > 0 ? (
+                                            selectedUser.modules.map((module, index) => (
+                                                <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mr-2 mb-2">
+                                                    {getModuleDisplayName(module)}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-gray-500 text-sm">No modules assigned</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
+                                    <div className="space-y-2">
+                                        {selectedUser?.permissions && selectedUser.permissions.length > 0 ? (
+                                            selectedUser.permissions.map((permission, index) => (
+                                                <span key={index} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mr-2 mb-2">
+                                                    {getPermissionDisplayName(permission)}
+                                                </span>
+                                            ))
+                                        ) : (
+                                            <span className="text-gray-500 text-sm">No specific permissions</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => {
+                                    setShowProfileModal(false);
+                                    setSelectedUser(null);
+                                }}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
 
             {/* Create/Edit User Modal */}
             {(showCreateModal || showEditModal) && (
@@ -423,6 +575,15 @@ export default function UserManagement() {
                                 />
                             </div>
                             <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                                <input
+                                    type="text"
+                                    value={newUser.username}
+                                    onChange={(e) => setNewUser({...newUser, username: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
+                            <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
                                 <input
                                     type="tel"
@@ -438,41 +599,35 @@ export default function UserManagement() {
                                     onChange={(e) => setNewUser({...newUser, role: e.target.value})}
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 >
-                                    <option value="manager">Manager</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="super_admin">Super Admin</option>
+                                    <option value={ROLES.MANAGER}>{getRoleDisplayName(ROLES.MANAGER)}</option>
+                                    <option value={ROLES.ADMIN}>{getRoleDisplayName(ROLES.ADMIN)}</option>
+                                    <option value={ROLES.SUPER_ADMIN}>{getRoleDisplayName(ROLES.SUPER_ADMIN)}</option>
                                 </select>
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Modules</label>
                                 <div className="grid grid-cols-2 gap-2">
-                                    {[
-                                        { key: 'user_management', label: 'User Management' },
-                                        { key: 'publisher_management', label: 'Publisher Management' },
-                                        { key: 'advertiser_management', label: 'Advertiser Management' },
-                                        { key: 'reports', label: 'Reports' },
-                                        { key: 'system_settings', label: 'System Settings' }
-                                    ].map((permission) => (
-                                        <label key={permission.key} className="flex items-center">
+                                    {Object.values(MODULES).map((module) => (
+                                        <label key={module} className="flex items-center">
                                             <input
                                                 type="checkbox"
-                                                checked={newUser.permissions.includes(permission.key)}
+                                                checked={newUser.modules.includes(module)}
                                                 onChange={(e) => {
                                                     if (e.target.checked) {
                                                         setNewUser({
                                                             ...newUser,
-                                                            permissions: [...newUser.permissions, permission.key]
+                                                            modules: [...newUser.modules, module]
                                                         });
                                                     } else {
                                                         setNewUser({
                                                             ...newUser,
-                                                            permissions: newUser.permissions.filter(p => p !== permission.key)
+                                                            modules: newUser.modules.filter(m => m !== module)
                                                         });
                                                     }
                                                 }}
                                                 className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                             />
-                                            <span className="text-sm text-gray-700">{permission.label}</span>
+                                            <span className="text-sm text-gray-700">{getModuleDisplayName(module)}</span>
                                         </label>
                                     ))}
                                 </div>

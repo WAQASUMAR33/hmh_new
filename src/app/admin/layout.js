@@ -7,6 +7,9 @@ export default function AdminLayout({ children }) {
     const pathname = usePathname();
 
     useEffect(() => {
+        // Only run on client side
+        if (typeof window === 'undefined') return;
+        
         // Skip auth check for login page
         if (pathname === '/admin/login') {
             return;
@@ -16,22 +19,16 @@ export default function AdminLayout({ children }) {
         const adminToken = localStorage.getItem('adminToken');
         const userRole = localStorage.getItem('userRole');
         
-        if (!adminToken || userRole !== 'admin') {
+        // Allow all admin roles
+        const allowedRoles = ['admin', 'super_admin', 'manager'];
+        
+        if (!adminToken || !allowedRoles.includes(userRole)) {
+            console.log('Admin layout auth failed:', { adminToken, userRole, allowedRoles });
             router.push('/admin/login');
             return;
         }
 
-        // Check if user is trying to access admin routes without proper role
-        const regularUserToken = localStorage.getItem('userToken');
-        const regularUserRole = localStorage.getItem('userRole');
-        
-        if (regularUserToken && regularUserRole && regularUserRole !== 'admin') {
-            // Clear regular user session and redirect to login
-            localStorage.removeItem('userToken');
-            localStorage.removeItem('userData');
-            router.push('/admin/login');
-            return;
-        }
+        console.log('Admin layout auth successful:', { adminToken, userRole });
     }, [pathname, router]);
 
     return (

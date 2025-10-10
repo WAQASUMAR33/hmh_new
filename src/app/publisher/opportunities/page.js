@@ -22,10 +22,8 @@ import {
     Users,
     FileText,
     ArrowRight,
-    ChevronDown,
-    MessageSquare
+    ChevronDown
 } from 'lucide-react';
-import ChatModal from '@/app/components/ChatModal';
 
 /* ---------------- Enhanced Animations ---------------- */
 const heroStagger = { hidden: {}, visible: { transition: { delayChildren: 0.08, staggerChildren: 0.06 } } };
@@ -87,10 +85,7 @@ export default function PublisherOpportunitiesPage() {
     const [q, setQ] = useState('');
     const [status, setStatus] = useState('ALL');
 
-    // Chat
-    const [isChatOpen, setIsChatOpen] = useState(false);
     const [selectedOpportunity, setSelectedOpportunity] = useState(null);
-    const [chatLoading, setChatLoading] = useState(false);
 
     // Build query string when filters change
     const queryParams = useMemo(() => {
@@ -147,36 +142,6 @@ export default function PublisherOpportunitiesPage() {
     const onApplyFilters = () => load({ reset: true });
     const onLoadMore = () => nextCursor && load({ cursor: nextCursor });
 
-    async function openChat(opportunity) {
-        setChatLoading(true);
-        try {
-            // For publishers, we need to get the current user info to show in chat
-            const response = await fetch('/api/user/me', { 
-                credentials: 'include' 
-            });
-            const data = await response.json();
-            
-            if (response.ok && data.user) {
-                setSelectedOpportunity({
-                    ...opportunity,
-                    publisher: data.user
-                });
-                setIsChatOpen(true);
-            } else {
-                toast.error('Failed to load user details');
-            }
-        } catch (error) {
-            console.error('Error fetching user details:', error);
-            toast.error('Failed to load user details');
-        } finally {
-            setChatLoading(false);
-        }
-    }
-
-    function closeChat() {
-        setIsChatOpen(false);
-        setSelectedOpportunity(null);
-    }
 
     async function onDelete(id) {
         if (!confirm('Delete this opportunity? This cannot be undone.')) return;
@@ -428,18 +393,6 @@ export default function PublisherOpportunitiesPage() {
                                         </div>
                                         <div className="md:col-span-2 flex md:justify-end gap-2">
                                             <button
-                                                onClick={() => openChat(item)}
-                                                className="rounded-lg border border-blue-300 px-3 py-2 text-sm hover:bg-blue-50 text-blue-700 font-medium transition-colors flex items-center gap-1 disabled:opacity-50"
-                                                disabled={chatLoading}
-                                            >
-                                                {chatLoading ? (
-                                                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-blue-700"></div>
-                                                ) : (
-                                                    <MessageSquare className="h-3.5 w-3.5" />
-                                                )}
-                                                {chatLoading ? 'Loading...' : 'Chat'}
-                                            </button>
-                                            <button
                                                 onClick={() => router.push(`/publisher/opportunities/${item.id}/edit`)}
                                                 className="rounded-lg border border-violet-300 px-3 py-2 text-sm hover:bg-violet-50 text-violet-700 font-medium transition-colors flex items-center gap-1"
                                             >
@@ -501,15 +454,6 @@ export default function PublisherOpportunitiesPage() {
                 </div>
             </motion.div>
 
-            {/* Chat Modal */}
-            {selectedOpportunity && (
-                <ChatModal
-                    isOpen={isChatOpen}
-                    onClose={closeChat}
-                    opportunityId={selectedOpportunity.id}
-                    opportunityTitle={selectedOpportunity.title}
-                />
-            )}
         </div>
     );
 }

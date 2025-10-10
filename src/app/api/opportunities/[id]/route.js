@@ -77,7 +77,14 @@ export async function GET(_req, { params }) {
             return NextResponse.json({ message: "Not found" }, { status: 404 });
         }
 
-        return NextResponse.json({ ok: true, opportunity: opp });
+        // Parse JSON strings back to arrays
+        const parsedOpp = {
+            ...opp,
+            verticals: opp.verticals ? JSON.parse(opp.verticals) : [],
+            geos: opp.geos ? JSON.parse(opp.geos) : [],
+        };
+
+        return NextResponse.json({ ok: true, opportunity: parsedOpp });
     } catch (e) {
         if (e?.code === 404) return NextResponse.json({ message: "Not found" }, { status: 404 });
         console.error("Get opportunity error:", e);
@@ -111,8 +118,8 @@ export async function PATCH(req, { params }) {
         if ("pricingType" in b) data.pricingType = b.pricingType;
         if ("basePrice" in b) data.basePrice = b.basePrice != null ? new Prisma.Decimal(b.basePrice) : null;
         if ("currency" in b) data.currency = b.currency || "USD";
-        if ("verticals" in b) data.verticals = b.verticals ?? undefined;
-        if ("geos" in b) data.geos = b.geos ?? undefined;
+        if ("verticals" in b) data.verticals = b.verticals ? JSON.stringify(b.verticals) : undefined;
+        if ("geos" in b) data.geos = b.geos ? JSON.stringify(b.geos) : undefined;
         if ("requirements" in b) data.requirements = b.requirements || null;
         if ("deliverables" in b) data.deliverables = b.deliverables || null;
         if ("monthlyTraffic" in b) data.monthlyTraffic = b.monthlyTraffic ?? null;

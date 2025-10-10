@@ -16,57 +16,43 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Image from 'next/image';
 
-export default function SuspendedAccount() {
-    const [user, setUser] = useState(null);
-    const [suspensionReason, setSuspensionReason] = useState('');
+export default function SuspendedPage() {
+    const [suspendedUser, setSuspendedUser] = useState(null);
+    const [userType, setUserType] = useState(null);
     const [appealMessage, setAppealMessage] = useState('');
     const [isSubmittingAppeal, setIsSubmittingAppeal] = useState(false);
     const router = useRouter();
 
     useEffect(() => {
-        let cancelled = false;
-
-        async function init() {
-            try {
-                // Prefer server truth for auth + suspension state
-                const res = await fetch('/api/user/me', { credentials: 'include' });
-                const json = await res.json();
-
-                if (!res.ok || !json?.user) {
-                    router.push('/login');
-                    return;
-                }
-
-                const currentUser = json.user;
-
-                // If not suspended, do not allow access to suspended page
-                if (!currentUser.isSuspended) {
-                    router.push('/publisher');
-                    return;
-                }
-
-                if (!cancelled) {
-                    setUser(currentUser);
-                    setSuspensionReason(currentUser.suspensionReason || '');
-                }
-            } catch (_e) {
-                // Fallback to local storage if API fails
-                const userData = localStorage.getItem('userData');
-                const userRole = localStorage.getItem('userRole');
-                if (!userData || userRole !== 'publisher') {
-                    router.push('/login');
-                    return;
-                }
-                const userInfo = JSON.parse(userData);
-                if (!cancelled) setUser(userInfo);
-            }
+        // Get suspended user info from localStorage
+        const suspendedUserData = localStorage.getItem('suspendedUser');
+        
+        if (!suspendedUserData) {
+            router.push('/login');
+            return;
         }
 
-        init();
-        return () => { cancelled = true; };
+        const userData = JSON.parse(suspendedUserData);
+        setSuspendedUser(userData);
+
+        // Try to determine user type from email or other means
+        // For now, we'll check if there's a way to determine this
+        // In a real app, you might store this info or make an API call
+        const email = userData.email;
+        
+        // Simple heuristic - in real app, you'd get this from the API
+        if (email.includes('publisher') || email.includes('pub')) {
+            setUserType('publisher');
+        } else if (email.includes('advertiser') || email.includes('adv')) {
+            setUserType('advertiser');
+        } else {
+            // Default to publisher for now
+            setUserType('publisher');
+        }
     }, [router]);
 
     const handleLogout = () => {
+        localStorage.removeItem('suspendedUser');
         localStorage.removeItem('userData');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userToken');
@@ -80,7 +66,7 @@ export default function SuspendedAccount() {
             return;
         }
 
-        if (!user) {
+        if (!suspendedUser || !userType) {
             toast.error('Unable to submit appeal. Please try logging in again.');
             return;
         }
@@ -88,30 +74,43 @@ export default function SuspendedAccount() {
         setIsSubmittingAppeal(true);
 
         try {
-            // Submit appeal using real API
-            const response = await fetch('/api/appeals', {
+            // First, we need to get the user ID
+            // In a real app, you'd have this from the login process
+            // For now, we'll make a call to get user info
+            const response = await fetch('/api/user/me', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Unable to get user information');
+            }
+
+            const userData = await response.json();
+            
+            // Submit appeal
+            const appealResponse = await fetch('/api/appeals', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    userId: user.id,
-                    userType: 'publisher',
-                    originalSuspensionReason: suspensionReason,
+                    userId: userData.user.id,
+                    userType: userType,
+                    originalSuspensionReason: suspendedUser.suspensionReason,
                     appealMessage: appealMessage
                 })
             });
 
-            const data = await response.json();
+            const appealData = await appealResponse.json();
             
-            if (data.success) {
+            if (appealData.success) {
                 toast.success('Appeal submitted successfully. We will review your case and respond within 2-3 business days.');
                 setAppealMessage('');
-            } else if (data.error === 'User is not suspended') {
-                toast.error('Your account is not suspended anymore. Redirecting to your dashboard...');
-                router.push('/publisher');
             } else {
-                toast.error(data.error || 'Failed to submit appeal');
+                toast.error(appealData.error || 'Failed to submit appeal');
             }
         } catch (error) {
             console.error('Error submitting appeal:', error);
@@ -121,7 +120,7 @@ export default function SuspendedAccount() {
         }
     };
 
-    if (!user) {
+    if (!suspendedUser || !userType) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
@@ -177,7 +176,7 @@ export default function SuspendedAccount() {
                     </h1>
                     
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                        Your account has been temporarily suspended. Please review the information below and submit an appeal if you believe this action was taken in error.
+                        Your {userType} account has been temporarily suspended. Please review the information below and submit an appeal if you believe this action was taken in error.
                     </p>
                 </motion.div>
 
@@ -196,25 +195,30 @@ export default function SuspendedAccount() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder</label>
-                                <p className="text-lg text-gray-900">{user.firstName} {user.lastName}</p>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                <p className="text-lg text-gray-900">{suspendedUser.email}</p>
                             </div>
                             
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                <p className="text-lg text-gray-900">{user.email}</p>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Account Type</label>
+                                <p className="text-lg text-gray-900 capitalize">{userType}</p>
                             </div>
                             
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Suspension Date</label>
-                                <p className="text-lg text-gray-900">January 20, 2024</p>
+                                <p className="text-lg text-gray-900">
+                                    {suspendedUser.suspensionDate ? 
+                                        new Date(suspendedUser.suspensionDate).toLocaleDateString() : 
+                                        new Date().toLocaleDateString()
+                                    }
+                                </p>
                             </div>
                         </div>
                         
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Reason for Suspension</label>
-                                <p className="text-lg text-red-600 font-medium">{suspensionReason}</p>
+                                <p className="text-lg text-red-600 font-medium">{suspendedUser.suspensionReason}</p>
                             </div>
                             
                             <div>
@@ -319,4 +323,3 @@ export default function SuspendedAccount() {
         </div>
     );
 }
-

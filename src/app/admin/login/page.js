@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Shield } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 /* --- motion presets (form only) --- */
 const formStagger = {
@@ -41,24 +43,73 @@ export default function AdminLogin() {
         setLoading(true);
         setErrorMsg('');
 
-        // Hardcoded admin credentials
-        if (form.email === 'admin@gmail.com' && form.password === '786@786') {
-            // Store admin session
-            localStorage.setItem('adminToken', 'admin_authenticated');
-            localStorage.setItem('userRole', 'admin');
-            localStorage.setItem('userEmail', 'admin@gmail.com');
-            
-            toast.success('Welcome, Admin!');
-            router.push('/admin/dashboard');
-        } else {
-            setErrorMsg('Invalid admin credentials');
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email: form.email,
+                    password: form.password
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.ok && data.user) {
+                // Check if user is an admin
+                if (data.user.role === 'ADMIN') {
+                    // Fetch user permissions from the database
+                    const userResponse = await fetch(`/api/admin/users`);
+                    const userData = await userResponse.json();
+                    
+                    let userPermissions = [];
+                    let userModules = [];
+                    let userRole = 'manager'; // Default role
+                    
+                    if (userData.success) {
+                        const currentUser = userData.users.find(u => u.id === data.user.id);
+                        if (currentUser) {
+                            userPermissions = currentUser.permissions || [];
+                            userModules = currentUser.modules || [];
+                            userRole = currentUser.role || 'manager';
+                            // Map superadmin to super_admin for internal use
+                            if (userRole === 'superadmin') {
+                                userRole = 'super_admin';
+                            }
+                        }
+                    }
+                    
+                    // Store admin session with permissions and modules
+                    localStorage.setItem('adminToken', 'admin_authenticated');
+                    localStorage.setItem('userRole', userRole);
+                    localStorage.setItem('userEmail', data.user.email);
+                    localStorage.setItem('userId', data.user.id);
+                    localStorage.setItem('userName', `${data.user.firstName} ${data.user.lastName}`);
+                    localStorage.setItem('userPermissions', JSON.stringify(userPermissions));
+                    localStorage.setItem('userModules', JSON.stringify(userModules));
+                    
+                    toast.success(`Welcome, ${data.user.firstName}!`);
+                    router.push('/admin/dashboard');
+                } else {
+                    setErrorMsg('Access denied. Admin privileges required.');
+                }
+            } else {
+                setErrorMsg(data.message || 'Invalid admin credentials');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            setErrorMsg('Login failed. Please try again.');
         }
         
         setLoading(false);
     };
 
     return (
-        <div className="h-screen flex flex-col lg:flex-row bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 overflow-hidden">
+        <>
+            <ToastContainer />
+            <div className="h-screen flex flex-col lg:flex-row bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 overflow-hidden">
             {/* Left Side - Hero Section */}
             <motion.div 
                 className="w-full lg:w-1/2 relative overflow-hidden"
@@ -258,5 +309,6 @@ export default function AdminLogin() {
                 </motion.div>
             </motion.div>
         </div>
+        </>
     );
 }

@@ -11,10 +11,9 @@ export default function Header({ title = "Admin Dashboard", icon: Icon = User })
     const profileRef = useRef(null);
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (user) {
-            const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-            setUserName(fullName || 'Admin User');
+        const userName = localStorage.getItem('userName');
+        if (userName) {
+            setUserName(userName);
         } else {
             setUserName('Admin User');
         }
@@ -34,6 +33,10 @@ export default function Header({ title = "Admin Dashboard", icon: Icon = User })
         localStorage.removeItem('adminToken');
         localStorage.removeItem('userRole');
         localStorage.removeItem('userEmail');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userPermissions');
+        localStorage.removeItem('userModules');
         localStorage.removeItem('user');
         window.location.href = '/admin/login';
     };

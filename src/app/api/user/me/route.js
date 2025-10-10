@@ -19,6 +19,9 @@ export async function GET() {
                 role: true,
                 image: true,
                 username: true,
+                isSuspended: true,
+                suspensionReason: true,
+                suspensionDate: true,
             }
         });
 

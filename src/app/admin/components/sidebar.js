@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { filterMenuItems, getUserPermissions } from '../utils/permissions';
 
 const menuItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
@@ -157,10 +158,15 @@ export default function Sidebar() {
     const pathname = usePathname();
     const [isHovered, setIsHovered] = useState(false);
     const [pinned, setPinned] = useState(false);
+    const [userPermissions, setUserPermissions] = useState([]);
 
     useEffect(() => {
         const saved = localStorage.getItem('adminSidebarPinned');
         if (saved === 'true') setPinned(true);
+        
+        // Load user permissions
+        const permissions = getUserPermissions();
+        setUserPermissions(permissions);
     }, []);
 
     const sidebarWidth = useMemo(() => (pinned ? 260 : (isHovered ? 260 : 80)), [pinned, isHovered]);
@@ -208,7 +214,7 @@ export default function Sidebar() {
                 )}
             </div>
             <ul className="mt-4 space-y-2">
-                {menuItems.map((item, index) => (
+                {filterMenuItems(menuItems, userPermissions).map((item, index) => (
                     <SidebarItem
                         key={index}
                         item={item}

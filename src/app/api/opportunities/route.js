@@ -23,8 +23,8 @@ export async function POST(req) {
                 pricingType: data.pricingType,
                 basePrice: data.basePrice ? new Prisma.Decimal(data.basePrice) : null,
                 currency: data.currency || "USD",
-                verticals: data.verticals || undefined,
-                geos: data.geos || undefined,
+                verticals: data.verticals ? JSON.stringify(data.verticals) : undefined,
+                geos: data.geos ? JSON.stringify(data.geos) : undefined,
                 requirements: data.requirements,
                 deliverables: data.deliverables,
                 monthlyTraffic: data.monthlyTraffic ?? null,
@@ -92,6 +92,8 @@ export async function GET(req) {
                 monthlyTraffic: true,
                 availableFrom: true,      // ⬅️ your card uses these
                 availableTo: true,        // ⬅️ your card uses these
+                verticals: true,          // ⬅️ include for parsing
+                geos: true,               // ⬅️ include for parsing
                 publisher: {
                     select: {
                         id: true,
@@ -107,8 +109,15 @@ export async function GET(req) {
             },
         });
 
-        const nextCursor = items.length === take ? items[items.length - 1].id : null;
-        return NextResponse.json({ ok: true, items, nextCursor });
+        // Parse JSON strings back to arrays
+        const parsedItems = items.map(item => ({
+            ...item,
+            verticals: item.verticals ? JSON.parse(item.verticals) : [],
+            geos: item.geos ? JSON.parse(item.geos) : [],
+        }));
+
+        const nextCursor = parsedItems.length === take ? parsedItems[parsedItems.length - 1].id : null;
+        return NextResponse.json({ ok: true, items: parsedItems, nextCursor });
     } catch (e) {
         console.error("List opportunities error:", e);
         return NextResponse.json({ message: "Failed to list" }, { status: 500 });

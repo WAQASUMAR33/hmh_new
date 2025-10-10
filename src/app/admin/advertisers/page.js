@@ -31,6 +31,7 @@ export default function AdvertiserManagement() {
     const [advertisers, setAdvertisers] = useState([]);
     const [selectedAdvertiser, setSelectedAdvertiser] = useState(null);
     const [showSuspensionModal, setShowSuspensionModal] = useState(false);
+    const [showProfileModal, setShowProfileModal] = useState(false);
     const [suspensionReason, setSuspensionReason] = useState('');
     const router = useRouter();
 
@@ -133,14 +134,14 @@ export default function AdvertiserManagement() {
                     email: user.email,
                     phone: user.phoneNumber || 'N/A',
                     region: user.country || 'N/A',
-                    status: user.isActivated ? 'active' : 'inactive',
+                    status: user.isSuspended ? 'suspended' : (user.isActivated ? 'active' : 'inactive'),
                     joinDate: new Date(user.createdAt).toISOString().split('T')[0],
-                    totalCampaigns: user._count.advertiserBookings,
-                    activeCampaigns: user._count.advertiserBookings, // Simplified
+                    totalCampaigns: user._count?.advertiserBookings || 0,
+                    activeCampaigns: user.isSuspended ? 0 : (user._count?.advertiserBookings || 0),
                     totalSpent: 0, // Would need to calculate from bookings
                     lastActive: new Date(user.updatedAt).toISOString().split('T')[0],
                     companySize: 'N/A', // Not available in current schema
-                    suspensionReason: user.isActivated ? '' : 'Account not activated'
+                    suspensionReason: user.isSuspended ? (user.suspensionReason || '') : ''
                 }));
                 setAdvertisers(transformedAdvertisers);
             } else {
@@ -164,38 +165,88 @@ export default function AdvertiserManagement() {
         return matchesSearch && matchesStatus && matchesRegion;
     });
 
+    const handleViewProfile = (advertiser) => {
+        setSelectedAdvertiser(advertiser);
+        setShowProfileModal(true);
+    };
+
     const handleSuspendAccount = (advertiser) => {
         setSelectedAdvertiser(advertiser);
         setShowSuspensionModal(true);
     };
 
-    const confirmSuspension = () => {
+    const confirmSuspension = async () => {
         if (!suspensionReason.trim()) {
             toast.error('Please provide a reason for suspension');
             return;
         }
 
-        // Update advertiser status
-        setAdvertisers(prev => prev.map(a => 
-            a.id === selectedAdvertiser.id 
-                ? { ...a, status: 'suspended', suspensionReason, activeCampaigns: 0 }
-                : a
-        ));
+        try {
+            const response = await fetch('/api/admin/suspend-user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: selectedAdvertiser.id,
+                    suspensionReason: suspensionReason,
+                    suspendedBy: 'admin' // In real app, this would be the actual admin user ID
+                })
+            });
 
-        toast.success(`Account suspended: ${selectedAdvertiser.name}`);
-        setShowSuspensionModal(false);
-        setSuspensionReason('');
-        setSelectedAdvertiser(null);
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update advertiser status
+                setAdvertisers(prev => prev.map(a => 
+                    a.id === selectedAdvertiser.id 
+                        ? { ...a, status: 'suspended', suspensionReason, activeCampaigns: 0 }
+                        : a
+                ));
+
+                toast.success(`Account suspended: ${selectedAdvertiser.name}. Email notification sent.`);
+                setShowSuspensionModal(false);
+                setSuspensionReason('');
+                setSelectedAdvertiser(null);
+            } else {
+                toast.error(data.error || 'Failed to suspend account');
+            }
+        } catch (error) {
+            console.error('Error suspending account:', error);
+            toast.error('Error suspending account');
+        }
     };
 
-    const handleUnsuspendAccount = (advertiser) => {
-        setAdvertisers(prev => prev.map(a => 
-            a.id === advertiser.id 
-                ? { ...a, status: 'active', suspensionReason: '' }
-                : a
-        ));
+    const handleUnsuspendAccount = async (advertiser) => {
+        try {
+            const response = await fetch('/api/admin/suspend-user', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    userId: advertiser.id,
+                    unsuspendedBy: 'admin' // In real app, this would be the actual admin user ID
+                })
+            });
 
-        toast.success(`Account unsuspended: ${advertiser.name}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                setAdvertisers(prev => prev.map(a => 
+                    a.id === advertiser.id 
+                        ? { ...a, status: 'active', suspensionReason: '' }
+                        : a
+                ));
+
+                toast.success(`Account unsuspended: ${advertiser.name}`);
+            } else {
+                toast.error(data.error || 'Failed to unsuspend account');
+            }
+        } catch (error) {
+            console.error('Error unsuspending account:', error);
+            toast.error('Error unsuspending account');
+        }
     };
 
     const getStatusBadge = (status) => {
@@ -333,9 +384,9 @@ export default function AdvertiserManagement() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div className="flex items-center space-x-2">
                                                 <button
-                                                    onClick={() => setSelectedAdvertiser(advertiser)}
+                                                    onClick={() => handleViewProfile(advertiser)}
                                                     className="text-blue-600 hover:text-blue-900 p-1"
-                                                    title="View Details"
+                                                    title="View Profile"
                                                 >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
@@ -366,9 +417,139 @@ export default function AdvertiserManagement() {
                 </div>
             </main>
 
+            {/* Profile View Modal */}
+            {showProfileModal && (
+                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto"
+                    >
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-xl font-semibold text-gray-900">
+                                Advertiser Profile: {selectedAdvertiser?.name}
+                            </h3>
+                            <button
+                                onClick={() => {
+                                    setShowProfileModal(false);
+                                    setSelectedAdvertiser(null);
+                                }}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Company Information */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                                    <div className="text-sm text-gray-900">{selectedAdvertiser?.name}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                                    <div className="text-sm text-gray-900">{selectedAdvertiser?.contactPerson}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <div className="text-sm text-gray-900">{selectedAdvertiser?.email}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                    <div className="text-sm text-gray-900">{selectedAdvertiser?.phone}</div>
+                                </div>
+                            </div>
+
+                            {/* Account Information */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Account Status</label>
+                                    <div className="flex items-center">
+                                        {getStatusBadge(selectedAdvertiser?.status)}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                                    <div className="text-sm text-gray-900">{selectedAdvertiser?.region}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Join Date</label>
+                                    <div className="text-sm text-gray-900">{selectedAdvertiser?.joinDate}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Last Active</label>
+                                    <div className="text-sm text-gray-900">{selectedAdvertiser?.lastActive}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Campaign Metrics */}
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                            <h4 className="text-lg font-medium text-gray-900 mb-4">Campaign Metrics</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-blue-600">{selectedAdvertiser?.totalCampaigns}</div>
+                                    <div className="text-sm text-gray-600">Total Campaigns</div>
+                                </div>
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-green-600">{selectedAdvertiser?.activeCampaigns}</div>
+                                    <div className="text-sm text-gray-600">Active Campaigns</div>
+                                </div>
+                                <div className="bg-gray-50 rounded-lg p-4">
+                                    <div className="text-2xl font-bold text-yellow-600">{formatCurrency(selectedAdvertiser?.totalSpent)}</div>
+                                    <div className="text-sm text-gray-600">Total Spent</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Company Details */}
+                        <div className="mt-6 pt-6 border-t border-gray-200">
+                            <h4 className="text-lg font-medium text-gray-900 mb-4">Company Details</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Company Size</label>
+                                    <div className="text-sm text-gray-900">{selectedAdvertiser?.companySize}</div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                                    <div className="text-sm text-gray-900">{selectedAdvertiser?.id}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Suspension Information */}
+                        {selectedAdvertiser?.status === 'suspended' && selectedAdvertiser?.suspensionReason && (
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <h4 className="text-lg font-medium text-red-600 mb-2">Suspension Details</h4>
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                    <div className="text-sm text-red-800">
+                                        <strong>Reason:</strong> {selectedAdvertiser.suspensionReason}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => {
+                                    setShowProfileModal(false);
+                                    setSelectedAdvertiser(null);
+                                }}
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </motion.div>
+                </div>
+            )}
+
             {/* Suspension Modal */}
             {showSuspensionModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50">
                     <motion.div
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
